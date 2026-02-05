@@ -123,7 +123,7 @@ def set_all_default():
     ])
     time.sleep(1)
 
-def tripod(dur=0.3, pu=0.3, lif=100, rot=90):
+def tripod(dur=0.3, pu=0.3, lif=100, rot=93):
     duration = dur
     pause = pu
     lift = lif
@@ -181,18 +181,18 @@ def turn_right(dur, pu, rot,lif):
 
 def turn_left_90():
     for i in range(4):
-        turn_left(0.3,0.3,162,200)
-        time.sleep(0.5)
+        turn_left(0.3,0.3,165,100)
+        time.sleep(0.3)
 
 def turn_right_90():
     for i in range(4):
-        turn_right(0.3,0.3,162,200)
-        time.sleep(0.5)
+        turn_right(0.3,0.3,165,100)
+        time.sleep(0.3)
 
 def turn_around_180():
     for i in range(8):
-        turn_left(0.3,0.3,162,200)
-        time.sleep(0.5)
+        turn_left(0.3,0.3,165,100)
+        time.sleep(0.3)
 
 #test the accuracy of moving one tile, important for adjusting the compounding errors
 def move_one_tile(reps=1):
@@ -263,11 +263,16 @@ def move_with_target(start, goal):
 def move_to_target_with_input():
     start_x = int(input("Enter the starting x coordinate: "))
     start_y = int(input("Enter the starting y coordinate: "))
+    start_heading = int(input("Enter the start heading: "))
     goal_x = int(input("Enter the goal x coordinate: "))
     goal_y = int(input("Enter the goal y coordinate: "))
-    start = (start_x, start_y, 3)  # Assuming starting facing South
-    goal = (goal_x, goal_y, 3)    # Assuming goal facing South
+    goal_heading = int(input("Enter the goal heading: "))
+    start = (start_x, start_y, start_heading)  
+    goal = (goal_x, goal_y, goal_heading)    
     move_with_target(start, goal)
+
+
+
 
 if __name__ == "__main__":
     set_all_default()
@@ -276,7 +281,7 @@ if __name__ == "__main__":
     map1 = mp.CSME301Map()
     map1.printObstacleMap()
     # move_one_tile(1)
-    # move_to_target_with_input()
+    move_to_target_with_input()
 
 
 
