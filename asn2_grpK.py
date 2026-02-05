@@ -90,11 +90,7 @@ P_LEFT = 870
 #Desired State, in this case is the distance threshold 35cm, times 10 because of th readding of the sonar use milimeter
 DISTANCE = 350
 
-#Direction value
-NORTH = 1
-EAST = 2
-SOUTH = 3
-WEST = 4
+# North=1, East=2, South=3, West=4
 
 def set_all_default():
     board.bus_servo_set_position(1, [
@@ -264,7 +260,14 @@ def move_with_target(start, goal):
             turn_left_90()  
 
             
-
+def move_to_target_with_input():
+    start_x = int(input("Enter the starting x coordinate: "))
+    start_y = int(input("Enter the starting y coordinate: "))
+    goal_x = int(input("Enter the goal x coordinate: "))
+    goal_y = int(input("Enter the goal y coordinate: "))
+    start = (start_x, start_y, 3)  # Assuming starting facing South
+    goal = (goal_x, goal_y, 3)    # Assuming goal facing South
+    move_with_target(start, goal)
 
 if __name__ == "__main__":
     set_all_default()
@@ -273,7 +276,7 @@ if __name__ == "__main__":
     map1 = mp.CSME301Map()
     map1.printObstacleMap()
     # move_one_tile(1)
-    move_with_target((0,0,3), (2,1,1))
+    # move_to_target_with_input()
 
 
 
