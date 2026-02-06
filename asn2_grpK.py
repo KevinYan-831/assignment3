@@ -7,6 +7,9 @@ import ros_robot_controller_sdk as rrc
 import sonar
 import matplotlib.pyplot as plt
 
+#x is south north, south is positive. Y is east west, east is positive
+#Algorithm follow the cost gradient
+DIRECTION = mp.DIRECTION
 print('''
 **********************************************************
 ********CS/ME 301 Assignment Template*******
@@ -271,7 +274,179 @@ def move_to_target_with_input():
     goal = (goal_x, goal_y, goal_heading)    
     move_with_target(start, goal)
 
+def wavefront_propagation(given_map, goal_x, goal_y):
+    # Clear the cost map first
+    given_map.clearCostMap()
+    #set the goal position's cost to 2, since 1 and 0 is usually indicated as something else
+    given_map.setCost(goal_x, goal_y, 2)
+    # Wavefront propagation using iterative approach
+    # Continue until no more changes occur
+    changed = True
+    while changed:
+        changed = False
+        # Scan through all cells
+        for i in range(given_map.costmap_size_row):
+            for j in range(given_map.costmap_size_col):
+                current_cost = given_map.getCost(i, j)
+                # If cell has been assigned a value (> 2, since the goal position is 2, so the cost value starts at 2 and increasig), try to propagate
+                if current_cost >= 2:
+                    # Increment cost value of neighbor to the current cost cell
+                    for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East, DIRECTION.West]:
+                        # Check wall existence in differen directions, if no:
+                        if given_map.getNeighborObstacle(i, j, direction) == 0:
+                            neighbor_cost = given_map.getNeighborCost(i, j, direction)
+                            # If neighbor is unvisited (0) or has higher cost, update it
+                            if neighbor_cost == 0 or neighbor_cost > current_cost + 1:
+                                given_map.setNeighborCost(i, j, direction, current_cost + 1)
+                                changed = True
+                
+    #for not possible path, set a extremely high value so that the robot won't be interfere
+    for i in range(given_map.costmap_size_row):
+        for j in range(given_map.costmap_size_col):
+            if given_map.getCost(i,j) == 0:
+                given_map.setCost(i,j,10000)
+    return given_map.costMap
 
+#Traverse the cost map from the current position, and find the optimal direction to travel for the next step, 
+# which by finding the lowest non obstacle cost cell near the position.
+def next_step(given_map, cur_x, cur_y):
+    cur_cost = given_map.getCost(cur_x, cur_y)
+    cur_min_cost = cur_cost
+    best_direction = None
+    for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East, DIRECTION.West]:
+        #must be non obstacle
+        if given_map.getNeighborObstacle(cur_x, cur_y, direction) == 0:
+            #must be smaller than the current cost 
+            if given_map.getNeighborCost(cur_x, cur_y, direction) < cur_cost:
+                #must be the smallest, which is the best, if equally small, then just go to the first find one
+                if given_map.getNeighborCost(cur_x, cur_y, direction) < cur_min_cost:
+                    cur_min_cost = given_map.getNeighborCost(cur_x, cur_y, direction)
+                    best_direction = direction
+    return best_direction
+
+#execute the path and return the path
+def path_generating(given_map, start_x, start_y, start_heading, goal_x, goal_y, goal_heading):
+    #create variables to store current state and keep updating until the robot walk to the destination
+    cur_x = start_x
+    cur_y = start_y
+    cur_heading = start_heading
+    #store the direction of travel one tile for each step
+    path = []
+    while cur_x != goal_x or cur_y != goal_y:
+        #find the next direction to travel for one tile
+        next_direction = next_step(given_map, cur_x, cur_y)
+        if next_direction is None:
+            print(f"Error: No valid path found - stuck at position ({cur_x}, {cur_y})")
+            break
+        path.append(next_direction)
+        #if heading is the same, then no need to update heading but only positilon
+        if next_direction == cur_heading:
+            move_one_tile()
+            #update current position
+            if next_direction == DIRECTION.South:
+                cur_x+=1
+            elif next_direction == DIRECTION.North:
+                cur_x-=1
+            elif next_direction == DIRECTION.East:
+                cur_y+=1
+            elif next_direction == DIRECTION.West:
+                cur_y-=1
+        # if direction is opposite, update position and update current heading
+        elif abs(next_direction - cur_heading) == 2:
+            turn_around_180()
+            time.sleep(0.5)
+            move_one_tile()
+            if next_direction == DIRECTION.South:
+                cur_x+=1
+                cur_heading = DIRECTION.South
+            elif next_direction == DIRECTION.North:
+                cur_x-=1
+                cur_heading = DIRECTION.North
+            elif next_direction == DIRECTION.East:
+                cur_y+=1
+                cur_heading = DIRECTION.East
+            elif next_direction == DIRECTION.West:
+                cur_y-=1
+                cur_heading = DIRECTION.West
+        #turn left and only update current state of y position and heading
+        elif cur_heading == DIRECTION.South and next_direction == DIRECTION.East:
+            turn_left_90()
+            time.sleep(0.5)
+            move_one_tile()
+            cur_y+=1
+            cur_heading = DIRECTION.East
+        elif cur_heading == DIRECTION.South and next_direction == DIRECTION.West:
+            turn_right_90()
+            time.sleep(0.5)
+            move_one_tile()
+            cur_y-=1
+            cur_heading = DIRECTION.West
+        elif cur_heading == DIRECTION.North and next_direction == DIRECTION.East:
+            turn_right_90()
+            time.sleep(0.5)
+            move_one_tile()
+            cur_y+=1
+            cur_heading = DIRECTION.East
+        elif cur_heading == DIRECTION.North and next_direction == DIRECTION.West:
+            turn_left_90()
+            time.sleep(0.5)
+            move_one_tile()
+            cur_y-=1
+            cur_heading = DIRECTION.West
+        elif cur_heading == DIRECTION.East and next_direction == DIRECTION.North:
+            turn_left_90()
+            time.sleep(0.5)
+            move_one_tile()
+            cur_x-=1
+            cur_heading = DIRECTION.North
+        elif cur_heading == DIRECTION.East and next_direction == DIRECTION.South:
+            turn_right_90()
+            time.sleep(0.5)
+            move_one_tile()
+            cur_x+=1
+            cur_heading = DIRECTION.South
+        elif cur_heading == DIRECTION.West and next_direction == DIRECTION.North:
+            turn_right_90()
+            time.sleep(0.5)
+            move_one_tile()
+            cur_x-=1
+            cur_heading = DIRECTION.North
+        elif cur_heading == DIRECTION.West and next_direction == DIRECTION.South:
+            turn_left_90()
+            time.sleep(0.5)
+            move_one_tile()
+            cur_x+=1
+            cur_heading = DIRECTION.South
+    #finally after arriving the goal position, adjust the goal heading
+    if goal_heading == cur_heading:
+        pass  # Already facing the correct direction
+    elif abs(goal_heading - cur_heading) == 2:
+        turn_around_180()
+    elif goal_heading == DIRECTION.South and cur_heading == DIRECTION.East:
+        turn_left_90()
+    elif goal_heading == DIRECTION.South and cur_heading == DIRECTION.West:
+        turn_right_90()
+    elif goal_heading == DIRECTION.North and cur_heading == DIRECTION.East:
+        turn_right_90()
+    elif goal_heading == DIRECTION.North and cur_heading == DIRECTION.West:
+        turn_left_90()
+    elif goal_heading == DIRECTION.East and cur_heading == DIRECTION.North:
+        turn_left_90()
+    elif goal_heading == DIRECTION.East and cur_heading == DIRECTION.South:
+        turn_right_90()
+    elif goal_heading == DIRECTION.West and cur_heading == DIRECTION.North:
+        turn_right_90()
+    elif goal_heading == DIRECTION.West and cur_heading == DIRECTION.South:
+        turn_left_90()
+
+    return path    
+
+        
+
+        
+                
+
+        
 
 
 if __name__ == "__main__":
@@ -280,8 +455,15 @@ if __name__ == "__main__":
     start_time = time.time()
     map1 = mp.CSME301Map()
     map1.printObstacleMap()
+    map1.printCostMap()
     # move_one_tile(1)
-    move_to_target_with_input()
+    # move_to_target_with_input()
+
+    map1.costMap = wavefront_propagation(map1,3,5)
+    map1.printCostMap()
+    print(next_step(map1, 0,0))
+    path_generating(map1, 0,0,3,4,4,2)
+    
 
 
 
