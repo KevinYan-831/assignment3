@@ -324,6 +324,7 @@ def next_step(given_map, cur_x, cur_y):
 
 #execute the path and return the path, ask user to input start and goal position
 def path_generating(given_map):
+    
     #create variables to store current state and keep updating until the robot walk to the destination
     start_x = int(input("Enter the starting x coordinate: "))
     start_y = int(input("Enter the starting y coordinate: "))
@@ -331,6 +332,10 @@ def path_generating(given_map):
     goal_x = int(input("Enter the goal x coordinate: "))
     goal_y = int(input("Enter the goal y coordinate: "))
     goal_heading = int(input("Enter the goal heading: "))
+
+    #First make sure the cost map is correctly set up
+    given_map.costMap = wavefront_propagation(given_map, goal_x, goal_y)
+
     cur_x = start_x
     cur_y = start_y
     cur_heading = start_heading
@@ -339,6 +344,7 @@ def path_generating(given_map):
     while cur_x != goal_x or cur_y != goal_y:
         #find the next direction to travel for one tile
         next_direction = next_step(given_map, cur_x, cur_y)
+        print(f"Current position: ({cur_x}, {cur_y}), heading={cur_heading}, next direction={next_direction}")
         if next_direction is None:
             print(f"Error: No valid path found - stuck at position ({cur_x}, {cur_y})")
             break
@@ -355,6 +361,7 @@ def path_generating(given_map):
                 cur_y+=1
             elif next_direction == DIRECTION.West:
                 cur_y-=1
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         # if direction is opposite, update position and update current heading
         elif abs(next_direction - cur_heading) == 2:
             turn_around_180()
@@ -372,6 +379,7 @@ def path_generating(given_map):
             elif next_direction == DIRECTION.West:
                 cur_y-=1
                 cur_heading = DIRECTION.West
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         #turn left and only update current state of y position and heading
         elif cur_heading == DIRECTION.South and next_direction == DIRECTION.East:
             turn_left_90()
@@ -379,48 +387,56 @@ def path_generating(given_map):
             move_one_tile()
             cur_y+=1
             cur_heading = DIRECTION.East
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.South and next_direction == DIRECTION.West:
             turn_right_90()
             time.sleep(0.5)
             move_one_tile()
             cur_y-=1
             cur_heading = DIRECTION.West
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.North and next_direction == DIRECTION.East:
             turn_right_90()
             time.sleep(0.5)
             move_one_tile()
             cur_y+=1
             cur_heading = DIRECTION.East
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.North and next_direction == DIRECTION.West:
             turn_left_90()
             time.sleep(0.5)
             move_one_tile()
             cur_y-=1
             cur_heading = DIRECTION.West
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.East and next_direction == DIRECTION.North:
             turn_left_90()
             time.sleep(0.5)
             move_one_tile()
             cur_x-=1
             cur_heading = DIRECTION.North
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.East and next_direction == DIRECTION.South:
             turn_right_90()
             time.sleep(0.5)
             move_one_tile()
             cur_x+=1
             cur_heading = DIRECTION.South
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.West and next_direction == DIRECTION.North:
             turn_right_90()
             time.sleep(0.5)
             move_one_tile()
             cur_x-=1
             cur_heading = DIRECTION.North
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.West and next_direction == DIRECTION.South:
             turn_left_90()
             time.sleep(0.5)
             move_one_tile()
             cur_x+=1
             cur_heading = DIRECTION.South
+            print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
     #finally after arriving the goal position, adjust the goal heading
     if goal_heading == cur_heading:
         pass  # Already facing the correct direction
@@ -462,10 +478,7 @@ if __name__ == "__main__":
     map1.printCostMap()
     # move_to_target_with_input()
 
-    map1.costMap = wavefront_propagation(map1, 3, 5)
-    map1.printCostMap()
 
-    print(next_step(map1, 0, 0))
     #get the path and execute the path
     path = path_generating(map1)
     
