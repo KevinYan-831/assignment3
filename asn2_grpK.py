@@ -203,66 +203,63 @@ def move_one_tile(reps=1):
     for j in range(repetitions):
         tripod()
 
+#dead reckoning algorithm, needs to update current position and heading after each movement, print current position and heading, maitain in a form of tuple (x,y,heading)
 def move_with_target(start, goal):
     heading = start[2]
-    
-    dif_NS = goal[0] - start[0] 
-    print(dif_NS)
-    dif_EW = goal[1] - start[1] 
-    print(dif_EW)
+    cur_x = start[0]
+    cur_y = start[1]
+    dif_NS = goal[0] - cur_x
+    dif_EW = goal[1] - cur_y
+    print(f"Starting at ({cur_x}, {cur_y}), heading={heading}")
 
-    if dif_NS > 0:
-        move_one_tile(dif_NS)
-    elif dif_NS == 0:
-        pass 
-    else:
-        turn_around_180()
+    # North-South movement
+    # dif_NS > 0 means travel south, dif_NS < 0 means travel north
+    if dif_NS != 0:
+        target_dir = DIRECTION.South if dif_NS > 0 else DIRECTION.North
+        diff = (target_dir - heading) % 4
+        if diff == 1:
+            turn_right_90()
+            heading = target_dir
+        elif diff == 2:
+            turn_around_180()
+            heading = target_dir
+        elif diff == 3:
+            turn_left_90()
+            heading = target_dir
         move_one_tile(abs(dif_NS))
+        cur_x = goal[0]
+        print(f"After NS move: ({cur_x}, {cur_y}), heading={heading}")
 
-      
-    #which means the robot need to travel east
-    if dif_EW > 0:
-        turn_left_90()
-        #when turn left, the heading needs to be updated
-        heading -= 1
-        move_one_tile(dif_EW)
-    elif dif_EW == 0:
-        pass
-    else:
-        turn_right_90()
-        heading += 1
+    # East-West movement
+    # dif_EW > 0 means travel east, dif_EW < 0 means travel west
+    if dif_EW != 0:
+        target_dir = DIRECTION.East if dif_EW > 0 else DIRECTION.West
+        diff = (target_dir - heading) % 4
+        if diff == 1:
+            turn_right_90()
+            heading = target_dir
+        elif diff == 2:
+            turn_around_180()
+            heading = target_dir
+        elif diff == 3:
+            turn_left_90()
+            heading = target_dir
         move_one_tile(abs(dif_EW))
-        
-    if heading == 1:
-        if goal[2] == 3:
-            turn_around_180()
-        elif goal[2] == 2:
-            turn_right_90()
-        elif goal[2] == 4:
-            turn_left_90()
-    elif heading == 2:
-        if goal[2] == 3:
-            turn_right_90()
-        elif goal[2] == 1:
-            turn_left_90()
-        elif goal[2] == 4:
-            turn_around_180()
-    elif heading == 3:
-        if goal[2] == 1:
-            turn_around_180() 
-        elif goal[2] == 2:
-            turn_left_90()
-        elif goal[2] == 4:
-            turn_right_90()   
-    elif heading == 4:
-        if goal[2] == 1:
-            turn_right_90() 
-        elif goal[2] == 2:
-            turn_around_180()
-        elif goal[2] == 3:
-            turn_left_90()  
+        cur_y = goal[1]
+        print(f"After EW move: ({cur_x}, {cur_y}), heading={heading}")
 
-            
+    # Align goal heading
+    if heading != goal[2]:
+        diff = (goal[2] - heading) % 4
+        if diff == 1:
+            turn_right_90()
+        elif diff == 2:
+            turn_around_180()
+        elif diff == 3:
+            turn_left_90()
+    print(f"Final position: ({cur_x}, {cur_y}), heading={goal[2]}")
+
+#Ask user for start and goal position and then execute the movement, assume no obstacle in the path.
 def move_to_target_with_input():
     start_x = int(input("Enter the starting x coordinate: "))
     start_y = int(input("Enter the starting y coordinate: "))
@@ -274,6 +271,7 @@ def move_to_target_with_input():
     goal = (goal_x, goal_y, goal_heading)    
     move_with_target(start, goal)
 
+#Return the cost map after wavefront propagation
 def wavefront_propagation(given_map, goal_x, goal_y):
     # Clear the cost map first
     given_map.clearCostMap()
@@ -324,9 +322,15 @@ def next_step(given_map, cur_x, cur_y):
                     best_direction = direction
     return best_direction
 
-#execute the path and return the path
-def path_generating(given_map, start_x, start_y, start_heading, goal_x, goal_y, goal_heading):
+#execute the path and return the path, ask user to input start and goal position
+def path_generating(given_map):
     #create variables to store current state and keep updating until the robot walk to the destination
+    start_x = int(input("Enter the starting x coordinate: "))
+    start_y = int(input("Enter the starting y coordinate: "))
+    start_heading = int(input("Enter the start heading: "))
+    goal_x = int(input("Enter the goal x coordinate: "))
+    goal_y = int(input("Enter the goal y coordinate: "))
+    goal_heading = int(input("Enter the goal heading: "))
     cur_x = start_x
     cur_y = start_y
     cur_heading = start_heading
@@ -456,13 +460,14 @@ if __name__ == "__main__":
     map1 = mp.CSME301Map()
     map1.printObstacleMap()
     map1.printCostMap()
-    # move_one_tile(1)
     # move_to_target_with_input()
 
-    map1.costMap = wavefront_propagation(map1,3,5)
+    map1.costMap = wavefront_propagation(map1, 3, 5)
     map1.printCostMap()
-    print(next_step(map1, 0,0))
-    path_generating(map1, 0,0,3,4,4,2)
+
+    print(next_step(map1, 0, 0))
+    #get the path and execute the path
+    path = path_generating(map1)
     
 
 
