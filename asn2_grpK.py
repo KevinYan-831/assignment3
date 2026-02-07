@@ -473,14 +473,18 @@ if __name__ == "__main__":
     set_all_default()
     s = sonar.Sonar()
     start_time = time.time()
+    #Create the map object
     map1 = mp.CSME301Map()
     map1.printObstacleMap()
     map1.printCostMap()
+
     # move_to_target_with_input()
+    # path = path_generating(map1)
+
+    #See the cost map after planning.
+    map1.printCostMap()
 
 
-    #get the path and execute the path
-    path = path_generating(map1)
     
 
 
