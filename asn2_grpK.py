@@ -6,6 +6,7 @@ import threading  # use threading to run PID control and tripod simultaneously
 import ros_robot_controller_sdk as rrc
 import sonar
 import matplotlib.pyplot as plt
+from collections import deque
 
 #x is south north, south is positive. Y is east west, east is positive
 #Algorithm follow the cost gradient
@@ -204,6 +205,7 @@ def move_one_tile(reps=1):
         tripod()
 
 #dead reckoning algorithm, needs to update current position and heading after each movement, print current position and heading, maitain in a form of tuple (x,y,heading)
+#return number of forward steps taken
 def move_with_target(start, goal):
     heading = start[2]
     cur_x = start[0]
@@ -258,6 +260,8 @@ def move_with_target(start, goal):
         elif diff == 3:
             turn_left_90()
     print(f"Final position: ({cur_x}, {cur_y}), heading={goal[2]}")
+
+    return abs(dif_NS) + abs(dif_EW)
 
 #Ask user for start and goal position and then execute the movement, assume no obstacle in the path.
 def move_to_target_with_input():
@@ -322,7 +326,7 @@ def next_step(given_map, cur_x, cur_y):
                     best_direction = direction
     return best_direction
 
-#execute the path and return the path, ask user to input start and goal position
+#execute and return the path, ask user to input start and goal position
 def path_generating(given_map):
     
     #create variables to store current state and keep updating until the robot walk to the destination
@@ -461,11 +465,44 @@ def path_generating(given_map):
 
     return path    
 
-        
+#find the optimal path given the map and return the number of steps to the goal
+def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
+    
+    queue = deque([(start_x, start_y)])
+    visited = set([(start_x, start_y)])
+    parent = {(start_x, start_y): None}
 
-        
+    while queue:
+        x, y = queue.popleft()
+        if (x, y) == (goal_x, goal_y):
+            path = []
+            while (x, y) is not None:
+                path.append((x, y))
+                x, y = parent[(x, y)]
+            return len(path) - 1
+
+        for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East, DIRECTION.West]:
+            if given_map.getNeighborObstacle(x, y, direction) == 0:
+                if direction == DIRECTION.North:
+                    neighbor = (x - 1, y)
+                elif direction == DIRECTION.South:
+                    neighbor = (x + 1, y)
+                elif direction == DIRECTION.East:
+                    neighbor = (x, y + 1)
+                elif direction == DIRECTION.West:
+                    neighbor = (x, y - 1)
+
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    parent[neighbor] = (x, y)
+                    queue.append(neighbor)
+
+    return None     
+
+  
                 
-
+def manhatten_distance(start_x, start_y, goal_x, goal_y):
+    return abs(start_x - goal_x) + abs(start_y - goal_y)
         
 
 
@@ -483,6 +520,15 @@ if __name__ == "__main__":
 
     #See the cost map after planning.
     map1.printCostMap()
+
+    #Calculate the ratio between manhatten distance to actual localization steps
+    # ML_ratio = manhatten_distance(start_x, start_y, goal_x, goal_y) / move_with_target(start,goal)
+    # print(f"Manhatten distance to actual steps ratio: {ML_ratio:.2f}")
+
+    #Calculate the ratio between optimal path steps and actual wavefront path steps
+    # optimal_steps = bfs_shortest_path(map1, start_x, start_y, goal_x, goal_y)/len(path)
+    # print(f"Optimal path steps to wavefront path steps ratio: {optimal_steps:.2f}")
+    
 
 
     
