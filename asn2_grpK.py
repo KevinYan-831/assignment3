@@ -124,14 +124,14 @@ def set_all_default():
     ])
     time.sleep(1)
 
-def tripod(dur=0.3, pu=0.3, lif=100, rot=100):
+def tripod(dur=0.3, pu=0.3, lif=100, rot=112):
     duration = dur
     pause = pu
     lift = lif
     rotation = rot
 
     t0 = time.perf_counter()
-    board.bus_servo_set_position(duration, [[RB_MIDDLE_ID, RB_MIDDLE_DEFAULT-lift], [RF_MIDDLE_ID, RF_MIDDLE_DEFAULT-lift], [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT+lift], [RB_INNER_ID, RB_INNER_DEFAULT-rotation+3], [RF_INNER_ID, RF_INNER_DEFAULT-rotation+3], [LM_INNER_ID, LM_INNER_DEFAULT+rotation+3], [RM_INNER_ID, RM_INNER_DEFAULT+rotation], [LB_INNER_ID, LB_INNER_DEFAULT-rotation], [LF_INNER_ID, LF_INNER_DEFAULT-rotation]]) # Initial lift of legs and rotation
+    board.bus_servo_set_position(duration, [[RB_MIDDLE_ID, RB_MIDDLE_DEFAULT-lift], [RF_MIDDLE_ID, RF_MIDDLE_DEFAULT-lift], [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT+lift], [RB_INNER_ID, RB_INNER_DEFAULT-rotation+12], [RF_INNER_ID, RF_INNER_DEFAULT-rotation+12], [LM_INNER_ID, LM_INNER_DEFAULT+rotation+12], [RM_INNER_ID, RM_INNER_DEFAULT+rotation], [LB_INNER_ID, LB_INNER_DEFAULT-rotation], [LF_INNER_ID, LF_INNER_DEFAULT-rotation]]) # Initial lift of legs and rotation
     time.sleep(pause)
     print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
     print(s.getDistance())
@@ -182,23 +182,25 @@ def turn_right(dur, pu, rot,lif):
 
 def turn_left_90():
     for i in range(4):
-        turn_left(0.3,0.3,165,100)
+        turn_left(0.3,0.3,197,100)
         time.sleep(0.3)
 
 def turn_right_90():
     for i in range(4):
-        turn_right(0.3,0.3,165,100)
+        turn_right(0.3,0.3,197,100)
         time.sleep(0.3)
 
 def turn_around_180():
     for i in range(8):
-        turn_left(0.3,0.3,165,100)
+        turn_left(0.3,0.3,197,100)
         time.sleep(0.3)
 
 #test the accuracy of moving one tile, important for adjusting the compounding errors
 def move_one_tile(reps=1):
-    repetitions = reps * 3
+    repetitions = reps * 4
     for j in range(repetitions):
+        if j != 0:
+            tripod(rot=95)
         tripod()
 
 #dead reckoning algorithm, needs to update current position and heading after each movement, print current position and heading, maitain in a form of tuple (x,y,heading)
@@ -569,13 +571,13 @@ if __name__ == "__main__":
     map1.printObstacleMap()
     map1.printCostMap()
 
-    turn_left_90()
+    # turn_left_90()
     # # move_to_target_with_input()
-    # path = path_generating(map1)
+    path = path_generating(map1)
 
-    # #See the cost map after planning.
-    # map1.printCostMap()
-    # print(f"path: {path}")
+    #See the cost map after planning.
+    map1.printCostMap()
+    print(f"path: {path}")
 
 
     #Calculate the ratio between manhatten distance to actual localization steps
