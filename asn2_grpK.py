@@ -40,48 +40,48 @@ RF_INNER_ID = 7
 RF_MIDDLE_ID = 8     
 RF_OUTER_ID = 9      
 RF_INNER_DEFAULT = 500
-RF_MIDDLE_DEFAULT = 400
-RF_OUTER_DEFAULT = 300
+RF_MIDDLE_DEFAULT = 200
+RF_OUTER_DEFAULT = 100
 
 # Left Front Leg
 LF_INNER_ID = 16
 LF_MIDDLE_ID = 17
 LF_OUTER_ID = 18
 LF_INNER_DEFAULT = 500
-LF_MIDDLE_DEFAULT = 600
-LF_OUTER_DEFAULT = 700
+LF_MIDDLE_DEFAULT = 800
+LF_OUTER_DEFAULT = 900
 
 # Right Middle Leg 
 RM_INNER_ID = 4
 RM_MIDDLE_ID = 5
 RM_OUTER_ID = 6
 RM_INNER_DEFAULT = 500
-RM_MIDDLE_DEFAULT = 400
-RM_OUTER_DEFAULT = 300
+RM_MIDDLE_DEFAULT = 200
+RM_OUTER_DEFAULT = 100
 
 # Left Middle Leg
 LM_INNER_ID = 13
 LM_MIDDLE_ID = 14
 LM_OUTER_ID = 15
 LM_INNER_DEFAULT = 500
-LM_MIDDLE_DEFAULT = 600
-LM_OUTER_DEFAULT = 700
+LM_MIDDLE_DEFAULT = 800
+LM_OUTER_DEFAULT = 900
 
 # Right Back Leg
 RB_INNER_ID = 1
 RB_MIDDLE_ID = 2
 RB_OUTER_ID = 3
 RB_INNER_DEFAULT = 500
-RB_MIDDLE_DEFAULT = 400
-RB_OUTER_DEFAULT = 300
+RB_MIDDLE_DEFAULT = 200
+RB_OUTER_DEFAULT = 100
 
 # Left Back Leg
 LB_INNER_ID = 10
 LB_MIDDLE_ID = 11
 LB_OUTER_ID = 12
 LB_INNER_DEFAULT = 500
-LB_MIDDLE_DEFAULT = 600
-LB_OUTER_DEFAULT = 700
+LB_MIDDLE_DEFAULT = 800
+LB_OUTER_DEFAULT = 900
 
 #Platform's value
 P_ID = 21
@@ -90,9 +90,6 @@ P_RIGHT = 130
 P_LEFT = 870
 
 
-
-#Desired State, in this case is the distance threshold 35cm, times 10 because of th readding of the sonar use milimeter
-DISTANCE = 350
 
 # North=1, East=2, South=3, West=4
 
@@ -572,12 +569,13 @@ if __name__ == "__main__":
     map1.printObstacleMap()
     map1.printCostMap()
 
-    # move_to_target_with_input()
-    path = path_generating(map1)
+    turn_left_90()
+    # # move_to_target_with_input()
+    # path = path_generating(map1)
 
-    #See the cost map after planning.
-    map1.printCostMap()
-    print(f"path: {path}")
+    # #See the cost map after planning.
+    # map1.printCostMap()
+    # print(f"path: {path}")
 
 
     #Calculate the ratio between manhatten distance to actual localization steps
