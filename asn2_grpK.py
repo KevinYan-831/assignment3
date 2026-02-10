@@ -127,14 +127,14 @@ def set_all_default():
     ])
     time.sleep(1)
 
-def tripod(dur=0.3, pu=0.3, lif=100, rot=93):
+def tripod(dur=0.3, pu=0.3, lif=100, rot=100):
     duration = dur
     pause = pu
     lift = lif
     rotation = rot
 
     t0 = time.perf_counter()
-    board.bus_servo_set_position(duration, [[RB_MIDDLE_ID, RB_MIDDLE_DEFAULT-lift], [RF_MIDDLE_ID, RF_MIDDLE_DEFAULT-lift], [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT+lift], [RB_INNER_ID, RB_INNER_DEFAULT-rotation], [RF_INNER_ID, RF_INNER_DEFAULT-rotation], [LM_INNER_ID, LM_INNER_DEFAULT+rotation], [RM_INNER_ID, RM_INNER_DEFAULT+rotation], [LB_INNER_ID, LB_INNER_DEFAULT-rotation], [LF_INNER_ID, LF_INNER_DEFAULT-rotation]]) # Initial lift of legs and rotation
+    board.bus_servo_set_position(duration, [[RB_MIDDLE_ID, RB_MIDDLE_DEFAULT-lift], [RF_MIDDLE_ID, RF_MIDDLE_DEFAULT-lift], [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT+lift], [RB_INNER_ID, RB_INNER_DEFAULT-rotation+3], [RF_INNER_ID, RF_INNER_DEFAULT-rotation+3], [LM_INNER_ID, LM_INNER_DEFAULT+rotation+3], [RM_INNER_ID, RM_INNER_DEFAULT+rotation], [LB_INNER_ID, LB_INNER_DEFAULT-rotation], [LF_INNER_ID, LF_INNER_DEFAULT-rotation]]) # Initial lift of legs and rotation
     time.sleep(pause)
     print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
     print(s.getDistance())
@@ -279,8 +279,17 @@ def move_to_target_with_input():
 def wavefront_propagation(given_map, goal_x, goal_y):
     # Clear the cost map first
     given_map.clearCostMap()
+
+    # Validate goal position
+    if goal_x < 0 or goal_x >= given_map.costmap_size_row or goal_y < 0 or goal_y >= given_map.costmap_size_col:
+        print(f"ERROR: Goal position ({goal_x}, {goal_y}) is out of bounds")
+        return None
+
     #set the goal position's cost to 2, since 1 and 0 is usually indicated as something else
-    given_map.setCost(goal_x, goal_y, 2)
+    if given_map.setCost(goal_x, goal_y, 2) == -1:
+        print(f"ERROR: Failed to set goal cost at ({goal_x}, {goal_y})")
+        return None
+
     # Wavefront propagation using iterative approach
     # Continue until no more changes occur
     changed = True
@@ -290,12 +299,25 @@ def wavefront_propagation(given_map, goal_x, goal_y):
         for i in range(given_map.costmap_size_row):
             for j in range(given_map.costmap_size_col):
                 current_cost = given_map.getCost(i, j)
+                if current_cost == -1:
+                    continue
                 # If cell has been assigned a value (> 2, since the goal position is 2, so the cost value starts at 2 and increasig), try to propagate
                 if current_cost >= 2:
                     # Increment cost value of neighbor to the current cost cell
                     for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East, DIRECTION.West]:
-                        # Check wall existence in differen directions, if no:
-                        if given_map.getNeighborObstacle(i, j, direction) == 0:
+                        # Skip directions that would go out of bounds
+                        if direction == DIRECTION.North and i == 0:
+                            continue
+                        if direction == DIRECTION.South and i >= given_map.costmap_size_row - 1:
+                            continue
+                        if direction == DIRECTION.West and j == 0:
+                            continue
+                        if direction == DIRECTION.East and j >= given_map.costmap_size_col - 1:
+                            continue
+
+                        # Check wall existence in different directions, if no:
+                        obstacle = given_map.getNeighborObstacle(i, j, direction)
+                        if obstacle == 0:  # No wall
                             neighbor_cost = given_map.getNeighborCost(i, j, direction)
                             # If neighbor is unvisited (0) or has higher cost, update it
                             if neighbor_cost == 0 or neighbor_cost > current_cost + 1:
@@ -309,26 +331,45 @@ def wavefront_propagation(given_map, goal_x, goal_y):
                 given_map.setCost(i,j,10000)
     return given_map.costMap
 
-#Traverse the cost map from the current position, and find the optimal direction to travel for the next step, 
+#Traverse the cost map from the current position, and find the optimal direction to travel for the next step,
 # which by finding the lowest non obstacle cost cell near the position.
 def next_step(given_map, cur_x, cur_y):
     cur_cost = given_map.getCost(cur_x, cur_y)
     cur_min_cost = cur_cost
     best_direction = None
+    max_row = given_map.costmap_size_row - 1
+    max_col = given_map.costmap_size_col - 1
+
     for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East, DIRECTION.West]:
+        # Skip directions that would go out of bounds
+        if direction == DIRECTION.North and cur_x == 0:
+            continue
+        if direction == DIRECTION.South and cur_x >= max_row:
+            continue
+        if direction == DIRECTION.West and cur_y == 0:
+            continue
+        if direction == DIRECTION.East and cur_y >= max_col:
+            continue
+
         #must be non obstacle
-        if given_map.getNeighborObstacle(cur_x, cur_y, direction) == 0:
-            #must be smaller than the current cost 
-            if given_map.getNeighborCost(cur_x, cur_y, direction) < cur_cost:
-                #must be the smallest, which is the best, if equally small, then just go to the first find one
-                if given_map.getNeighborCost(cur_x, cur_y, direction) < cur_min_cost:
-                    cur_min_cost = given_map.getNeighborCost(cur_x, cur_y, direction)
-                    best_direction = direction
+        obstacle = given_map.getNeighborObstacle(cur_x, cur_y, direction)
+        if obstacle == -1:  # Out of bounds error from getNeighborObstacle
+            continue
+        if obstacle == 0:  # No wall
+            neighbor_cost = given_map.getNeighborCost(cur_x, cur_y, direction)
+            #must be smaller than the current cost
+            if neighbor_cost < cur_cost and neighbor_cost < cur_min_cost:
+                cur_min_cost = neighbor_cost
+                best_direction = direction
     return best_direction
 
 #execute and return the path, ask user to input start and goal position
 def path_generating(given_map):
-    
+
+    max_row = given_map.costmap_size_row - 1
+    max_col = given_map.costmap_size_col - 1
+    print(f"Map dimensions: x (row) in [0, {max_row}], y (col) in [0, {max_col}]")
+
     #create variables to store current state and keep updating until the robot walk to the destination
     start_x = int(input("Enter the starting x coordinate: "))
     start_y = int(input("Enter the starting y coordinate: "))
@@ -337,8 +378,20 @@ def path_generating(given_map):
     goal_y = int(input("Enter the goal y coordinate: "))
     goal_heading = int(input("Enter the goal heading: "))
 
+    # Validate coordinates
+    if not (0 <= start_x <= max_row and 0 <= start_y <= max_col):
+        print(f"ERROR: Start position ({start_x}, {start_y}) is out of bounds!")
+        return None
+    if not (0 <= goal_x <= max_row and 0 <= goal_y <= max_col):
+        print(f"ERROR: Goal position ({goal_x}, {goal_y}) is out of bounds!")
+        return None
+
     #First make sure the cost map is correctly set up
-    given_map.costMap = wavefront_propagation(given_map, goal_x, goal_y)
+    cost_map = wavefront_propagation(given_map, goal_x, goal_y)
+    if cost_map is None:
+        print("ERROR: Failed to generate cost map")
+        return None
+    given_map.costMap = cost_map
 
     cur_x = start_x
     cur_y = start_y
@@ -467,7 +520,9 @@ def path_generating(given_map):
 
 #find the optimal path given the map and return the number of steps to the goal
 def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
-    
+    max_row = given_map.costmap_size_row - 1
+    max_col = given_map.costmap_size_col - 1
+
     queue = deque([(start_x, start_y)])
     visited = set([(start_x, start_y)])
     parent = {(start_x, start_y): None}
@@ -482,7 +537,18 @@ def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
             return len(path) - 1
 
         for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East, DIRECTION.West]:
-            if given_map.getNeighborObstacle(x, y, direction) == 0:
+            # Skip directions that would go out of bounds
+            if direction == DIRECTION.North and x == 0:
+                continue
+            if direction == DIRECTION.South and x >= max_row:
+                continue
+            if direction == DIRECTION.West and y == 0:
+                continue
+            if direction == DIRECTION.East and y >= max_col:
+                continue
+
+            obstacle = given_map.getNeighborObstacle(x, y, direction)
+            if obstacle == 0:  # No wall
                 if direction == DIRECTION.North:
                     neighbor = (x - 1, y)
                 elif direction == DIRECTION.South:
@@ -516,10 +582,12 @@ if __name__ == "__main__":
     map1.printCostMap()
 
     # move_to_target_with_input()
-    # path = path_generating(map1)
+    path = path_generating(map1)
 
     #See the cost map after planning.
     map1.printCostMap()
+    print(f"path: {path}")
+    
 
     #Calculate the ratio between manhatten distance to actual localization steps
     # ML_ratio = manhatten_distance(start_x, start_y, goal_x, goal_y) / move_with_target(start,goal)
