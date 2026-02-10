@@ -422,7 +422,6 @@ def path_generating(given_map):
         # if direction is opposite, update position and update current heading
         elif abs(next_direction - cur_heading) == 2:
             turn_around_180()
-            time.sleep(0.5)
             move_one_tile()
             if next_direction == DIRECTION.South:
                 cur_x+=1
@@ -440,56 +439,48 @@ def path_generating(given_map):
         #turn left and only update current state of y position and heading
         elif cur_heading == DIRECTION.South and next_direction == DIRECTION.East:
             turn_left_90()
-            time.sleep(0.5)
             move_one_tile()
             cur_y+=1
             cur_heading = DIRECTION.East
             print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.South and next_direction == DIRECTION.West:
             turn_right_90()
-            time.sleep(0.5)
             move_one_tile()
             cur_y-=1
             cur_heading = DIRECTION.West
             print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.North and next_direction == DIRECTION.East:
             turn_right_90()
-            time.sleep(0.5)
             move_one_tile()
             cur_y+=1
             cur_heading = DIRECTION.East
             print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.North and next_direction == DIRECTION.West:
             turn_left_90()
-            time.sleep(0.5)
             move_one_tile()
             cur_y-=1
             cur_heading = DIRECTION.West
             print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.East and next_direction == DIRECTION.North:
             turn_left_90()
-            time.sleep(0.5)
             move_one_tile()
             cur_x-=1
             cur_heading = DIRECTION.North
             print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.East and next_direction == DIRECTION.South:
             turn_right_90()
-            time.sleep(0.5)
             move_one_tile()
             cur_x+=1
             cur_heading = DIRECTION.South
             print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.West and next_direction == DIRECTION.North:
             turn_right_90()
-            time.sleep(0.5)
             move_one_tile()
             cur_x-=1
             cur_heading = DIRECTION.North
             print(f"Moved to position: ({cur_x}, {cur_y}), heading={cur_heading}")
         elif cur_heading == DIRECTION.West and next_direction == DIRECTION.South:
             turn_left_90()
-            time.sleep(0.5)
             move_one_tile()
             cur_x+=1
             cur_heading = DIRECTION.South
@@ -587,7 +578,7 @@ if __name__ == "__main__":
     #See the cost map after planning.
     map1.printCostMap()
     print(f"path: {path}")
-    
+
 
     #Calculate the ratio between manhatten distance to actual localization steps
     # ML_ratio = manhatten_distance(start_x, start_y, goal_x, goal_y) / move_with_target(start,goal)
