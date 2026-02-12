@@ -146,8 +146,8 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [LF_INNER_ID, LF_INNER_DEFAULT - rotation]
     ])  # Initial lift of legs and rotation
     time.sleep(pause)
-    print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
-    print(s.getDistance())
+    
+    
 
     board.bus_servo_set_position(duration, [
         [RB_MIDDLE_ID, RB_MIDDLE_DEFAULT],
@@ -155,8 +155,8 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT]
     ])  # Putting legs back down
     time.sleep(pause)
-    print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
-    print(s.getDistance())
+    
+    
 
     board.bus_servo_set_position(duration, [
         [RM_MIDDLE_ID, RM_MIDDLE_DEFAULT - lift],
@@ -170,8 +170,7 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [LM_INNER_ID, LM_INNER_DEFAULT - rotation]
     ])  # Lifting second set of legs and rotation
     time.sleep(pause)
-    print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
-    print(s.getDistance())
+    
 
     board.bus_servo_set_position(duration, [
         [RM_MIDDLE_ID, RM_MIDDLE_DEFAULT],
@@ -179,8 +178,7 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [LF_MIDDLE_ID, LF_MIDDLE_DEFAULT]
     ])  # Putting down
     time.sleep(pause)
-    print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
-    print(s.getDistance())
+    
 
 
 def turn_left(dur, pu, rot, lif):
@@ -715,7 +713,7 @@ def manhatten_distance(start_x, start_y, goal_x, goal_y):
 
 if __name__ == "__main__":
     set_all_default()
-    s = sonar.Sonar()
+    
     start_time = time.time()
 
     # Create the map object

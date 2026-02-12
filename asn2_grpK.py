@@ -94,7 +94,7 @@ P_LEFT = 870
 # North=1, East=2, South=3, West=4
 
 #Reactive control, distance threshold, used to avoid hitting the wall. If exceed threshold, just immediately skip the current step and move on
-DISTANCE = 320
+DISTANCE = 340
 
 def set_all_default():
     board.bus_servo_set_position(1, [
@@ -140,9 +140,9 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [RB_MIDDLE_ID, RB_MIDDLE_DEFAULT - lift],
         [RF_MIDDLE_ID, RF_MIDDLE_DEFAULT - lift],
         [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT + lift],
-        [RB_INNER_ID, RB_INNER_DEFAULT - rotation + 7],
-        [RF_INNER_ID, RF_INNER_DEFAULT - rotation + 7],
-        [LM_INNER_ID, LM_INNER_DEFAULT + rotation + 7],
+        [RB_INNER_ID, RB_INNER_DEFAULT - rotation],
+        [RF_INNER_ID, RF_INNER_DEFAULT - rotation],
+        [LM_INNER_ID, LM_INNER_DEFAULT + rotation ],
         [RM_INNER_ID, RM_INNER_DEFAULT + rotation],
         [LB_INNER_ID, LB_INNER_DEFAULT - rotation],
         [LF_INNER_ID, LF_INNER_DEFAULT - rotation]
@@ -268,19 +268,19 @@ def turn_right(dur, pu, rot, lif):
 def turn_left_90():
     for i in range(4):
         turn_left(0.3, 0.3, 197, 100)
-    time.sleep(0.3)
+        time.sleep(0.3)
 
 
 def turn_right_90():
     for i in range(4):
         turn_right(0.3, 0.3, 197, 100)
-    time.sleep(0.3)
+        time.sleep(0.3)
 
 
 def turn_around_180():
     for i in range(8):
         turn_left(0.3, 0.3, 197, 100)
-    time.sleep(0.3)
+        time.sleep(0.3)
 
 
 # test the accuracy of moving one tile, important for adjusting the compounding
@@ -289,7 +289,7 @@ def move_one_tile(reps=1):
     repetitions = reps * 4
     if repetitions > 4:
         for j in range(repetitions):
-            rotation = 105 - 2 * (reps - 1)
+            rotation = 105 - 2 * (j - 1)
             tripod(rot=rotation)
             distance = s.getDistance()
             if distance < DISTANCE:
@@ -870,14 +870,14 @@ if __name__ == "__main__":
     map1.printObstacleMap()
     map1.printCostMap()
 
-    turn_right_90()
+    # turn_right_90()
     # # move_to_target_with_input()
     # print_path_generating(map1)
-    # path_generating(map1)
+    path_generating(map1)
 
     # See the cost map after planning.
     map1.printCostMap()
-    # move_one_tile()
+    # move_one_tile(2)
 
     # Calculate the ratio between manhatten distance to actual localization steps
     # ML_ratio = manhatten_distance(start_x, start_y, goal_x, goal_y) / \
