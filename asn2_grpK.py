@@ -93,6 +93,8 @@ P_LEFT = 870
 
 # North=1, East=2, South=3, West=4
 
+#Reactive control, distance threshold, used to avoid hitting the wall. If exceed threshold, just immediately skip the current step and move on
+DISTANCE = 320
 
 def set_all_default():
     board.bus_servo_set_position(1, [
@@ -289,9 +291,16 @@ def move_one_tile(reps=1):
         for j in range(repetitions):
             rotation = 105 - 2 * (reps - 1)
             tripod(rot=rotation)
+            distance = s.getDistance()
+            if distance < DISTANCE:
+                break
+            
     else:
         for j in range(repetitions):
             tripod()
+            distance = s.getDistance()
+            if distance < DISTANCE:
+                break
 
 
 # dead reckoning algorithm, needs to update current position and heading after each
@@ -476,6 +485,144 @@ def next_step(given_map, cur_x, cur_y):
                 best_direction = direction
 
     return best_direction
+
+#print the path
+# execute and return the path, ask user to input start and goal position
+def print_path_generating(given_map):
+    max_row = given_map.costmap_size_row - 1
+    max_col = given_map.costmap_size_col - 1
+    print(f"Map dimensions: x (row) in [0, {max_row}], y (col) in [0, {max_col}]")
+
+    # create variables to store current state and keep updating until the robot
+    # walk to the destination
+    start_x = int(input("Enter the starting x coordinate: "))
+    start_y = int(input("Enter the starting y coordinate: "))
+    start_heading = int(input("Enter the start heading: "))
+    goal_x = int(input("Enter the goal x coordinate: "))
+    goal_y = int(input("Enter the goal y coordinate: "))
+    
+
+    # Validate coordinates
+    if not (0 <= start_x <= max_row and 0 <= start_y <= max_col):
+        print(f"ERROR: Start position ({start_x}, {start_y}) is out of bounds!")
+        return None
+    if not (0 <= goal_x <= max_row and 0 <= goal_y <= max_col):
+        print(f"ERROR: Goal position ({goal_x}, {goal_y}) is out of bounds!")
+        return None
+
+    # First make sure the cost map is correctly set up
+    cost_map = wavefront_propagation(given_map, goal_x, goal_y)
+    if cost_map is None:
+        print("ERROR: Failed to generate cost map")
+        return None
+
+    given_map.costMap = cost_map
+
+    cur_x = start_x
+    cur_y = start_y
+    cur_heading = start_heading
+
+    # store the direction of travel one tile for each step
+    path = []
+
+    while cur_x != goal_x or cur_y != goal_y:
+        # find the next direction to travel for one tile
+        next_direction = next_step(given_map, cur_x, cur_y)
+        print(f"Current position: ({cur_x}, {cur_y}), heading={cur_heading}, "
+              f"next direction={next_direction}")
+
+        if next_direction is None:
+            print(f"Error: No valid path found - stuck at position "
+                  f"({cur_x}, {cur_y})")
+            break
+
+        path.append(next_direction)
+
+        # if heading is the same, then no need to update heading but only position
+        if next_direction == cur_heading:
+            
+            # update current position
+            if next_direction == DIRECTION.South:
+                cur_x += 1
+            elif next_direction == DIRECTION.North:
+                cur_x -= 1
+            elif next_direction == DIRECTION.East:
+                cur_y += 1
+            elif next_direction == DIRECTION.West:
+                cur_y -= 1
+
+        # if direction is opposite, update position and update current heading
+        elif abs(next_direction - cur_heading) == 2:
+            
+            if next_direction == DIRECTION.South:
+                cur_x += 1
+                cur_heading = DIRECTION.South
+            elif next_direction == DIRECTION.North:
+                cur_x -= 1
+                cur_heading = DIRECTION.North
+            elif next_direction == DIRECTION.East:
+                cur_y += 1
+                cur_heading = DIRECTION.East
+            elif next_direction == DIRECTION.West:
+                cur_y -= 1
+                cur_heading = DIRECTION.West
+
+        # turn left and only update current state of y position and heading
+        elif (cur_heading == DIRECTION.South and
+              next_direction == DIRECTION.East):
+            
+            cur_y += 1
+            cur_heading = DIRECTION.East
+
+
+        elif (cur_heading == DIRECTION.South and
+              next_direction == DIRECTION.West):
+            
+            cur_y -= 1
+            cur_heading = DIRECTION.West
+
+
+        elif (cur_heading == DIRECTION.North and
+              next_direction == DIRECTION.East):
+            
+            cur_y += 1
+            cur_heading = DIRECTION.East
+
+
+        elif (cur_heading == DIRECTION.North and
+              next_direction == DIRECTION.West):
+            
+            cur_y -= 1
+            cur_heading = DIRECTION.West
+
+
+        elif (cur_heading == DIRECTION.East and
+              next_direction == DIRECTION.North):
+            
+            cur_x -= 1
+            cur_heading = DIRECTION.North
+
+
+        elif (cur_heading == DIRECTION.East and
+              next_direction == DIRECTION.South):
+            
+            cur_x += 1
+            cur_heading = DIRECTION.South
+
+
+        elif (cur_heading == DIRECTION.West and
+              next_direction == DIRECTION.North):
+            
+            cur_x -= 1
+            cur_heading = DIRECTION.North
+
+
+        elif (cur_heading == DIRECTION.West and
+              next_direction == DIRECTION.South):
+            
+            cur_x += 1
+            cur_heading = DIRECTION.South
+    print(path)
 
 
 # execute and return the path, ask user to input start and goal position
@@ -723,12 +870,14 @@ if __name__ == "__main__":
     map1.printObstacleMap()
     map1.printCostMap()
 
-    # turn_left_90()
+    turn_right_90()
     # # move_to_target_with_input()
-    path_generating(map1)
+    # print_path_generating(map1)
+    # path_generating(map1)
 
     # See the cost map after planning.
     map1.printCostMap()
+    # move_one_tile()
 
     # Calculate the ratio between manhatten distance to actual localization steps
     # ML_ratio = manhatten_distance(start_x, start_y, goal_x, goal_y) / \
