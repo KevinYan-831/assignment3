@@ -107,6 +107,33 @@ class CSME301Map():
         self.verticalWalls[3][5] = 0
         self.verticalWalls[3][6] = 1
 
+    #Another constructor that create a empty map with no walls and costs
+    def __init__(self, num_row, num_col):
+        n_row = num_row
+        n_col = num_col
+        self.obstacle_size_row = n_row
+        self.obstacle_size_col = n_col
+        self.costmap_size_row = n_row
+        self.costmap_size_col = n_col
+        
+        self.horizontalWalls = [[0 for x in range(n_col)] for x in range(n_row+1)]
+        self.verticalWalls = [[0 for x in range(n_col+1)] for x in range(n_row)]
+        self.costMap = [[0 for x in range(n_col)] for x in range(n_row)]
+
+        # from IPython import embed; embed()
+        
+        for i in range(n_row):
+            for j in range(n_col):
+                self.costMap[i][j] = 0
+                
+        for a in range(len(self.horizontalWalls)):
+            for b in range(len(self.horizontalWalls[a])):
+                self.horizontalWalls[a][b] = 0
+
+        for c in range(len(self.verticalWalls)):
+            for d in range(len(self.verticalWalls[c])):
+                self.verticalWalls[c][d] = 0
+
         
     # ***********************************************************************
     # Function Name : getNeighborObstacle
@@ -139,6 +166,8 @@ class CSME301Map():
             isBlocked = self.verticalWalls[i][j+1]
 
         return isBlocked
+    
+    
 
     # ******************************************************************************
     # Function Name  : setObstacle
@@ -383,18 +412,20 @@ class CSME301Map():
             return self.obstacle_size_col
 
 def main():
-    your_map = CSME301Map()
-
-    your_map.printObstacleMap()
+    # your_map = CSME301Map()
+    my_map = CSME301Map(8,8)
+    # your_map.printObstacleMap()
+    my_map.printCostMap()
+    my_map.printObstacleMap()
     # your_map.clearObstacleMap()
     # your_map.printCostMap()
-    your_map.setObstacle(3, 4, 1, DIRECTION.East)
-    # isBlocked = your_map.getObstacle(3, 4, DIRECTION.North)
-    cell_cost = your_map.getCost(3, 4)
-    print("cell cost", cell_cost)
-    your_map.printCostMap()
-    your_map.clearObstacleMap()
-    your_map.printObstacleMap()
+    # your_map.setObstacle(3, 4, 1, DIRECTION.East)
+    # # isBlocked = your_map.getObstacle(3, 4, DIRECTION.North)
+    # cell_cost = your_map.getCost(3, 4)
+    # print("cell cost", cell_cost)
+    # your_map.printCostMap()
+    # your_map.clearObstacleMap()
+    # your_map.printObstacleMap()
 
 if __name__ == "__main__":
     main()

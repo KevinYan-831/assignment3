@@ -90,11 +90,14 @@ P_ID = 21
 P_DEFAULT = 500
 P_RIGHT = 130
 P_LEFT = 870
+P_BACK = 1200
 
 # North=1, East=2, South=3, West=4
 
+
 #Reactive control, distance threshold, used to avoid hitting the wall. If exceed threshold, just immediately skip the current step and move on
-DISTANCE = 340
+DISTANCE_PLAN = 340
+DISTANCE_BLOCK = 300
 
 def set_all_default():
     board.bus_servo_set_position(1, [
@@ -126,6 +129,26 @@ def set_all_default():
         [P_ID, P_DEFAULT]
     ])
     time.sleep(1)
+
+#helper function that return boolean to determin whether the robot is blocked. Return True if the robot is blocked
+def is_blocked(distance):
+    return distance <= DISTANCE_BLOCK
+
+def platform_left(dur):
+    duration = dur
+    board.bus_servo_set_position(duration, [[P_ID, P_LEFT]])
+
+def platform_right(dur):
+    duration = dur
+    board.bus_servo_set_position(duration, [[P_ID, P_RIGHT]])
+
+def platform_default(dur):
+    duration = dur
+    board.bus_servo_set_position(duration, [[P_ID, P_DEFAULT]])
+
+def platform_back(dur):
+    duration = dur
+    board.bus_servo_set_position(duration, [[P_ID, P_BACK]])
 
 
 def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
@@ -292,14 +315,14 @@ def move_one_tile(reps=1):
             rotation = 105 - 2 * (j - 1)
             tripod(rot=rotation)
             distance = s.getDistance()
-            if distance < DISTANCE:
+            if distance < DISTANCE_PLAN:
                 break
             
     else:
         for j in range(repetitions):
             tripod()
             distance = s.getDistance()
-            if distance < DISTANCE:
+            if distance < DISTANCE_PLAN:
                 break
 
 
@@ -363,7 +386,7 @@ def move_with_target(start, goal):
             turn_left_90()
 
     print(f"Final position: ({cur_x}, {cur_y}), heading={goal[2]}")
-    return abs(dif_NS) + abs(dif_EW)
+    return abs(dif_NS) + abs(dif_EW), heading
 
 
 # Ask user for start and goal position and then execute the movement, assume no
@@ -855,28 +878,221 @@ def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
                     parent[neighbor] = (x, y)
                     queue.append(neighbor)
 
-    return None
+    return path
 
 
 def manhatten_distance(start_x, start_y, goal_x, goal_y):
     return abs(start_x - goal_x) + abs(start_y - goal_y)
 
-#using dfs approach to naviagte every non-visited cell, assume the robot always start at (0,0,1)
+#using frontier based approach to naviagte every non-visited neighbor cell, assume the robot always start at (0,0,1)
 #every step moving, the robot stop to let the sensor detect wall existence in each direction
 #should return the constructed map
-def mapping(given_map):
-    start_x = 0
-    start_y = 0
-    start_heading = 1
 
-    #keep track of robot current position
+def frontier_mapping(given_map):
+    # Initialize robot state
     cur_x = 0
     cur_y = 0
     cur_heading = 1
 
-    #initialize the constructed map
-    gen_map = 
-    #initialize the stack for depth first search
+    # Initialize tracking sets
+    visited = set()
+    frontiers = set()
+
+    # Add starting cell to visited
+    visited.add((cur_x, cur_y))
+
+
+    while True:
+        # Scan current cell to detect walls
+        scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map)
+
+        # Update frontier set with newly discovered neighbors
+        update_frontier(given_map, visited, frontiers, cur_x, cur_y)
+
+        print(f"Visited: {len(visited)} cells, Frontiers: {frontiers}")
+
+        # Check completion condition
+        if not frontiers and len(visited) > 1:
+            print("\n=== Exploration complete! All reachable cells visited. ===")
+            break
+
+        # Select nearest frontier
+        next_target = select_next_frontier(cur_x, cur_y, frontiers, given_map)
+        if next_target is None:
+            print("\n=== No more reachable frontiers. Exploration complete. ===")
+            break
+
+        print(f"Next target: {next_target}")
+
+        # Navigate to target
+        start_state = (cur_x, cur_y, cur_heading)
+        goal_state = (next_target[0], next_target[1], cur_heading)
+
+        # move_with_target returns (steps, final_heading)
+        steps, cur_heading = move_with_target(start_state, goal_state)
+
+        # Update position after movement
+        cur_x, cur_y = next_target
+        visited.add((cur_x, cur_y))
+        frontiers.discard((cur_x, cur_y))
+
+    # Print final constructed map
+    print("\n=== Final constructed map ===")
+    given_map.printObstacleMap()
+    print(f"Total cells visited: {len(visited)}")
+
+    return visited, frontiers
+
+
+
+
+def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map):
+    distance_south = 0
+    distance_north = 0
+    distance_east = 0
+    distacne_west = 0
+    #constat for detection error
+    ERROR_RANGE = 50
+    for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East,
+                      DIRECTION.West]:
+        if direction == DIRECTION.North:
+            if cur_heading == 1:
+                distance_north = s.getDistance()
+            elif cur_heading == 3:
+                platform_back(0.5)
+                time.sleep(0.6)
+                distance_north = s.getDistance()
+            elif cur_heading == 2:
+                platform_right(0.5)
+                time.sleep(0.6)
+                distance_north = s.getDistance()
+            else:
+                platform_left(0.5)
+                time.sleep(0.6)
+                distance_north = s.getDistance()
+        elif direction == DIRECTION.South:
+            if cur_heading == 3:
+                distance_south = s.getDistance()
+            elif cur_heading == 1:
+                platform_back(0.5)
+                time.sleep(0.6)
+                distance_south = s.getDistance()
+            elif cur_heading == 2:
+                platform_left(0.5)
+                time.sleep(0.6)
+                distance_south = s.getDistance()
+            else:
+                platform_right(0.5)
+                time.sleep(0.6)
+                distance_south = s.getDistance()
+        elif direction == DIRECTION.East:
+            if cur_heading == 2:
+                distance_east = s.getDistance()
+            elif cur_heading == 4:
+                platform_back(0.5)
+                time.sleep(0.6)
+                distance_east = s.getDistance()
+            elif cur_heading == 3:
+                platform_right(0.5)
+                time.sleep(0.6)
+                distance_east = s.getDistance()
+            else:
+                platform_left(0.5)
+                time.sleep(0.6)
+                distance_east = s.getDistance()
+        elif direction == DIRECTION.West:
+            if cur_heading == 4:
+                distacne_west = s.getDistance()
+            elif cur_heading == 2:
+                platform_back(0.5)
+                time.sleep(0.6)
+                distacne_west = s.getDistance()
+            elif cur_heading == 3:
+                platform_left(0.5)
+                time.sleep(0.6)
+                distacne_west = s.getDistance()
+            else:
+                platform_right(0.5)
+                time.sleep(0.6)
+                distacne_west = s.getDistance()
+
+        #back to default
+        platform_default(0.5)
+        
+        #update the map
+    if distance_east <= DISTANCE_BLOCK + ERROR_RANGE:
+        given_map.setObstacle(cur_x,cur_y, 1, DIRECTION.East)
+    else:
+        given_map.setObstacle(cur_x,cur_y, 0, DIRECTION.East)
+
+    if distance_north <= DISTANCE_BLOCK + ERROR_RANGE:
+        given_map.setObstacle(cur_x,cur_y, 1, DIRECTION.North)
+    else:
+        given_map.setObstacle(cur_x,cur_y, 0, DIRECTION.North)
+
+    if distance_south <= DISTANCE_BLOCK + ERROR_RANGE:
+        given_map.setObstacle(cur_x,cur_y, 1, DIRECTION.South)
+    else:
+        given_map.setObstacle(cur_x,cur_y, 0, DIRECTION.South)
+
+    if distacne_west <= DISTANCE_BLOCK + ERROR_RANGE:
+        given_map.setObstacle(cur_x,cur_y, 1, DIRECTION.West)
+    else:
+        given_map.setObstacle(cur_x,cur_y, 0, DIRECTION.West)
+        
+    #print the obstacle map every step
+    given_map.printObstacleMap()
+
+def update_frontier(given_map, visited, frontier, cur_x, cur_y):
+    #store neighbors in every direction of the current position
+    neighbors = [
+        #north neighbor
+        (cur_x - 1, cur_y, DIRECTION.North),
+        #south neighbor
+        (cur_x + 1, cur_y, DIRECTION.South),
+        #west
+        (cur_x, cur_y - 1, DIRECTION.West),
+        #east
+        (cur_x, cur_y + 1, DIRECTION.East)
+    ]
+
+    for x, y, direction in neighbors:
+        #check out of bound, row (0-7), column (0-7)
+        if (x < 0 or x > 7 or y < 0 or y > 7):
+            continue
+        #check whether already visited
+        if (x,y) in visited:
+            continue
+        #check whether there's a wall
+        if given_map.getNeighborObstacle(cur_x, cur_y, direction) == 0:
+            frontier.add((x,y))
+    
+    #remove the current position from frontier
+    frontier.discard((cur_x,cur_y))
+
+def select_next_frontier(cur_x, cur_y, frontier, given_map):
+    best_coor = None
+    min_distance = float('inf')
+
+    for (fx, fy) in frontier:
+        # Compute shortest path distance respecting walls
+        dist = computer_path_distance(cur_x, cur_y, fx, fy, given_map)
+        if dist is not None and dist < min_distance:
+            min_distance = dist
+            best_coor = (fx, fy)
+
+    return best_coor
+
+
+#helper function to calculate the distance from current position to the frontier coordinate
+def computer_path_distance(cur_x, cur_y, frontier_x, frontier_y, give_map):
+    steps = len(bfs_shortest_path(give_map, cur_x, cur_y, frontier_x, frontier_y))
+    return steps 
+
+
+            
+        
+        
 
 
     
@@ -889,17 +1105,24 @@ if __name__ == "__main__":
 
     # Create the map object
     map1 = mp.CSME301Map()
-    map1.printObstacleMap()
-    map1.printCostMap()
+    # map1.printObstacleMap()
+    # map1.printCostMap()
 
-    # turn_right_90()
-    # # move_to_target_with_input()
-    path = print_path_generating(map1)
-    # path_generating(map1)
+    # # turn_right_90()
+    # # # move_to_target_with_input()
+    # path = print_path_generating(map1)
+    # # path_generating(map1)
 
-    # See the cost map after planning.
-    map1.printCostMap()
+    # # See the cost map after planning.
+    # map1.printCostMap()
     # move_one_tile(2)
+
+
+    map2 = mp.CSME301Map(8,8)
+
+    # Run frontier-based exploration on the empty map
+    frontier_mapping(map2)
+
 
     # Calculate the ratio between manhatten distance to actual localization steps
     # ML_ratio = manhatten_distance(0, 0, 3, 0) / 
