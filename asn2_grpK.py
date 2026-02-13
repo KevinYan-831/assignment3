@@ -820,8 +820,10 @@ def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
 
         if (x, y) == (goal_x, goal_y):
             path = []
-            while (x, y) is not None:
+            while True:
                 path.append((x, y))
+                if (x, y) not in parent or parent[(x, y)] is None:
+                    break
                 x, y = parent[(x, y)]
             return len(path) - 1
 
@@ -859,6 +861,26 @@ def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
 def manhatten_distance(start_x, start_y, goal_x, goal_y):
     return abs(start_x - goal_x) + abs(start_y - goal_y)
 
+#using dfs approach to naviagte every non-visited cell, assume the robot always start at (0,0,1)
+#every step moving, the robot stop to let the sensor detect wall existence in each direction
+#should return the constructed map
+def mapping(given_map):
+    start_x = 0
+    start_y = 0
+    start_heading = 1
+
+    #keep track of robot current position
+    cur_x = 0
+    cur_y = 0
+    cur_heading = 1
+
+    #initialize the constructed map
+    gen_map = 
+    #initialize the stack for depth first search
+
+
+    
+
 
 if __name__ == "__main__":
     set_all_default()
@@ -885,5 +907,5 @@ if __name__ == "__main__":
     # print(f"Manhatten distance to actual steps ratio: {ML_ratio:.2f}")
 
     # Calculate the ratio between optimal path steps and actual wavefront path steps
-    optimal_steps = bfs_shortest_path(map1, 3, 4, 3, 3) / len(path)
-    print(f"Optimal path steps to wavefront path steps ratio:{optimal_steps:.2f}")
+    # optimal_steps = bfs_shortest_path(map1, 3, 4, 3, 3) / len(path)
+    # print(f"Optimal path steps to wavefront path steps ratio:{optimal_steps:.2f}")

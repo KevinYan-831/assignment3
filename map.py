@@ -393,6 +393,8 @@ def main():
     cell_cost = your_map.getCost(3, 4)
     print("cell cost", cell_cost)
     your_map.printCostMap()
+    your_map.clearObstacleMap()
+    your_map.printObstacleMap()
 
 if __name__ == "__main__":
     main()
