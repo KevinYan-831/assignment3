@@ -90,7 +90,7 @@ P_ID = 21
 P_DEFAULT = 500
 P_RIGHT = 130
 P_LEFT = 870
-P_BACK = 1200
+
 
 # North=1, East=2, South=3, West=4
 
@@ -146,9 +146,7 @@ def platform_default(dur):
     duration = dur
     board.bus_servo_set_position(duration, [[P_ID, P_DEFAULT]])
 
-def platform_back(dur):
-    duration = dur
-    board.bus_servo_set_position(duration, [[P_ID, P_BACK]])
+
 
 
 def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
@@ -878,7 +876,8 @@ def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
                     parent[neighbor] = (x, y)
                     queue.append(neighbor)
 
-    return path
+    # No path found - return a large value to indicate unreachable
+    return float('inf')
 
 
 def manhatten_distance(start_x, start_y, goal_x, goal_y):
@@ -926,7 +925,22 @@ def frontier_mapping(given_map):
 
         # Navigate to target
         start_state = (cur_x, cur_y, cur_heading)
-        goal_state = (next_target[0], next_target[1], cur_heading)
+
+        # Calculate goal heading: should align with final travel direction
+        dif_NS = next_target[0] - cur_x
+        dif_EW = next_target[1] - cur_y
+
+        if dif_EW != 0:
+            # Moving East/West (last movement direction)
+            goal_heading = DIRECTION.East if dif_EW > 0 else DIRECTION.West
+        elif dif_NS != 0:
+            # Only moving North/South
+            goal_heading = DIRECTION.South if dif_NS > 0 else DIRECTION.North
+        else:
+            # Already at target (shouldn't happen in normal flow)
+            goal_heading = cur_heading
+
+        goal_state = (next_target[0], next_target[1], goal_heading)
 
         # move_with_target returns (steps, final_heading)
         steps, cur_heading = move_with_target(start_state, goal_state)
@@ -943,83 +957,143 @@ def frontier_mapping(given_map):
 
     return visited, frontiers
 
+def fold_middle_leg():
+    board.bus_servo_set_position(0.5, [
+        [LM_INNER_ID, LM_INNER_DEFAULT - 200],
+        [RM_INNER_ID, RM_INNER_DEFAULT + 200],
+        [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT + 100],
+        [RM_MIDDLE_ID, RM_MIDDLE_DEFAULT - 100],
+    ])
+    time.sleep(0.5)
+
+def fold_default():
+    board.bus_servo_set_position(0.5, [
+        [LM_INNER_ID, LM_INNER_DEFAULT],
+        [RM_INNER_ID, RM_INNER_DEFAULT],
+        [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT],
+        [RM_MIDDLE_ID, RM_MIDDLE_DEFAULT],
+    ])
+    time.sleep(0.5)
 
 
 #scan all four directions and update the give map's obstacle map
 def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map):
-    distance_south = 0
-    distance_north = 0
-    distance_east = 0
-    distacne_west = 0
+    #the logic should be according to the current heading of the robot, scan all four directions and get readings and determine whether there's a wall and update the object map
+    DISTANCE_NO_WALL = 5000
+    distance_south = DISTANCE_NO_WALL
+    distance_north = DISTANCE_NO_WALL
+    distance_east = DISTANCE_NO_WALL
+    distance_west = DISTANCE_NO_WALL
     #constat for detection error
     ERROR_RANGE = 50
-    for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East,
-                      DIRECTION.West]:
-        if direction == DIRECTION.North:
-            if cur_heading == 1:
-                distance_north = s.getDistance()
-            elif cur_heading == 3:
-                platform_back(0.5)
-                time.sleep(0.6)
-                distance_north = s.getDistance()
-            elif cur_heading == 2:
-                platform_right(0.5)
-                time.sleep(0.6)
-                distance_north = s.getDistance()
-            else:
-                platform_left(0.5)
-                time.sleep(0.6)
-                distance_north = s.getDistance()
-        elif direction == DIRECTION.South:
-            if cur_heading == 3:
-                distance_south = s.getDistance()
-            elif cur_heading == 1:
-                platform_back(0.5)
-                time.sleep(0.6)
-                distance_south = s.getDistance()
-            elif cur_heading == 2:
-                platform_left(0.5)
-                time.sleep(0.6)
-                distance_south = s.getDistance()
-            else:
-                platform_right(0.5)
-                time.sleep(0.6)
-                distance_south = s.getDistance()
-        elif direction == DIRECTION.East:
-            if cur_heading == 2:
-                distance_east = s.getDistance()
-            elif cur_heading == 4:
-                platform_back(0.5)
-                time.sleep(0.6)
-                distance_east = s.getDistance()
-            elif cur_heading == 3:
-                platform_right(0.5)
-                time.sleep(0.6)
-                distance_east = s.getDistance()
-            else:
-                platform_left(0.5)
-                time.sleep(0.6)
-                distance_east = s.getDistance()
-        elif direction == DIRECTION.West:
-            if cur_heading == 4:
-                distacne_west = s.getDistance()
-            elif cur_heading == 2:
-                platform_back(0.5)
-                time.sleep(0.6)
-                distacne_west = s.getDistance()
-            elif cur_heading == 3:
-                platform_left(0.5)
-                time.sleep(0.6)
-                distacne_west = s.getDistance()
-            else:
-                platform_right(0.5)
-                time.sleep(0.6)
-                distacne_west = s.getDistance()
 
-        #back to default
-        platform_default(0.5)
-        
-        #update the map
+    for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East, DIRECTION.West]:
+        if cur_heading == direction:
+            distance = s.getDistance()
+            if direction == DIRECTION.North:
+                distance_north = distance
+                print(f"the distance to the {DIRECTION.North} is {distance_north}")
+            elif direction == DIRECTION.South:
+                distance_south = distance
+                print(f"the distance to the {DIRECTION.South} is {distance_south}")
+            elif direction == DIRECTION.East:
+                distance_east = distance
+                print(f"the distance to the {DIRECTION.East} is {distance_east}")
+            else:
+                distance_west = distance
+                print(f"the distance to the {DIRECTION.West} is {distance_west}")
+        elif abs(cur_heading - direction) == 2:
+            turn_around_180()
+            time.sleep(0.5)
+            distance = s.getDistance()
+            if direction == DIRECTION.North:
+                distance_north = distance
+                print(f"the distance to the {DIRECTION.North} is {distance_north}")
+            elif direction == DIRECTION.South:
+                distance_south = distance
+                print(f"the distance to the {DIRECTION.South} is {distance_south}")
+            elif direction == DIRECTION.East:
+                distance_east = distance
+                print(f"the distance to the {DIRECTION.East} is {distance_east}")
+            else:
+                distance_west = distance
+                print(f"the distance to the {DIRECTION.West} is {distance_west}")
+            turn_around_180()
+
+        elif cur_heading == 1 and direction == 2:
+            fold_middle_leg()
+            platform_right(0.5)
+            time.sleep(1)
+            distance_east = s.getDistance()
+            print(f"the distance to the {DIRECTION.East} is {distance_east}")
+            platform_default(0.5)
+            fold_default()
+
+        elif cur_heading == 1 and direction == 4:
+            fold_middle_leg()
+            platform_left(0.5)
+            time.sleep(1)
+            distance_west = s.getDistance()
+            print(f"the distance to the {DIRECTION.West} is {distance_west}")
+            platform_default(0.5)
+            fold_default()
+
+        elif cur_heading == 2 and direction == 1:
+            fold_middle_leg()
+            platform_left(0.5)
+            time.sleep(1)
+            distance_north = s.getDistance()
+            print(f"the distance to the {DIRECTION.North} is {distance_north}")
+            platform_default(0.5)
+            fold_default()
+
+        elif cur_heading == 2 and direction == 3:
+            fold_middle_leg()
+            platform_right(0.5)
+            time.sleep(1)
+            distance_south = s.getDistance()
+            print(f"the distance to the {DIRECTION.South} is {distance_south}")
+            platform_default(0.5)
+            fold_default()
+
+        elif cur_heading == 3 and direction == 2:
+            fold_middle_leg()
+            platform_left(0.5)
+            time.sleep(1)
+            distance_east = s.getDistance()
+            print(f"the distance to the {DIRECTION.East} is {distance_east}")
+            platform_default(0.5)
+            fold_default()
+
+        elif cur_heading == 3 and direction == 4:
+            fold_middle_leg()
+            platform_right(0.5)
+            time.sleep(1)
+            distance_west = s.getDistance()
+            print(f"the distance to the {DIRECTION.West} is {distance_west}")
+            platform_default(0.5)
+            fold_default()
+
+        elif cur_heading == 4 and direction == 3:
+            fold_middle_leg()
+            platform_left(0.5)
+            time.sleep(1)
+            distance_south = s.getDistance()
+            print(f"the distance to the {DIRECTION.South} is {distance_south}")
+            platform_default(0.5)
+            fold_default()
+
+        elif cur_heading == 4 and direction == 1:
+            fold_middle_leg()
+            platform_right(0.5)
+            time.sleep(1)
+            distance_north = s.getDistance()
+            print(f"the distance to the {DIRECTION.North} is {distance_north}")
+            platform_default(0.5)
+            fold_default()
+
+
+    # Update the map with detected obstacles
     if distance_east <= DISTANCE_BLOCK + ERROR_RANGE:
         given_map.setObstacle(cur_x,cur_y, 1, DIRECTION.East)
     else:
@@ -1035,14 +1109,15 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map):
     else:
         given_map.setObstacle(cur_x,cur_y, 0, DIRECTION.South)
 
-    if distacne_west <= DISTANCE_BLOCK + ERROR_RANGE:
+    if distance_west <= DISTANCE_BLOCK + ERROR_RANGE:
         given_map.setObstacle(cur_x,cur_y, 1, DIRECTION.West)
     else:
         given_map.setObstacle(cur_x,cur_y, 0, DIRECTION.West)
-        
+
     #print the obstacle map every step
     given_map.printObstacleMap()
 
+            
 def update_frontier(given_map, visited, frontier, cur_x, cur_y):
     #store neighbors in every direction of the current position
     neighbors = [
@@ -1086,7 +1161,8 @@ def select_next_frontier(cur_x, cur_y, frontier, given_map):
 
 #helper function to calculate the distance from current position to the frontier coordinate
 def computer_path_distance(cur_x, cur_y, frontier_x, frontier_y, give_map):
-    steps = len(bfs_shortest_path(give_map, cur_x, cur_y, frontier_x, frontier_y))
+    # bfs_shortest_path already returns the number of steps (int), not the path
+    steps = bfs_shortest_path(give_map, cur_x, cur_y, frontier_x, frontier_y)
     return steps 
 
 
@@ -1104,7 +1180,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     # Create the map object
-    map1 = mp.CSME301Map()
+    # map1 = mp.CSME301Map()
     # map1.printObstacleMap()
     # map1.printCostMap()
 
@@ -1122,6 +1198,7 @@ if __name__ == "__main__":
 
     # Run frontier-based exploration on the empty map
     frontier_mapping(map2)
+    # fold_middle_leg()
 
     map2.printCostMap()
     
