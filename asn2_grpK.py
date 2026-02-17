@@ -872,7 +872,7 @@ if __name__ == "__main__":
 
     # turn_right_90()
     # # move_to_target_with_input()
-    print_path_generating(map1)
+    # print_path_generating(map1)
     path_generating(map1)
 
     # See the cost map after planning.
