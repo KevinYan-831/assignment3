@@ -119,8 +119,6 @@ class CSME301Map():
         self.horizontalWalls = [[0 for x in range(n_col)] for x in range(n_row+1)]
         self.verticalWalls = [[0 for x in range(n_col+1)] for x in range(n_row)]
         self.costMap = [[0 for x in range(n_col)] for x in range(n_row)]
-
-        # from IPython import embed; embed()
         
         for i in range(n_row):
             for j in range(n_col):

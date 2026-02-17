@@ -945,7 +945,7 @@ def frontier_mapping(given_map):
 
 
 
-
+#scan all four directions and update the give map's obstacle map
 def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map):
     distance_south = 0
     distance_north = 0
@@ -1122,6 +1122,9 @@ if __name__ == "__main__":
 
     # Run frontier-based exploration on the empty map
     frontier_mapping(map2)
+
+    map2.printCostMap()
+    
 
 
     # Calculate the ratio between manhatten distance to actual localization steps
