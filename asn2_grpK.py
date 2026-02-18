@@ -303,24 +303,130 @@ def turn_around_180():
         turn_left(0.3, 0.3, 197, 100)
         time.sleep(0.3)
 
+#CrabWalk controller used to mitigate the lateral drifting of the robot caused by the compounding errors of the walking gait
+def LookAround():
+    #fold legs
+    fold_middle_leg()
+    #detect right distance
+    platform_right(0.5) # Turns sonar sensor right 
+    time.sleep(1)
+    right_distance = s.getDistance()
+    #detect left distance
+    platform_right(1) # Turns sonar sensor left
+    time.sleep(1.3)
+    left_distance = s.getDistance()
+    #return default 
+    platform_default(0.5)
+    #fold legs back
+    fold_default()
+    time.sleep(0.5)
+    #return the distance from two sides
+    return left_distance, right_distance
+
+def EnterCrabwalk(duration = 0.1):
+    board.bus_servo_set_position(duration, [[2,100], [17, 900]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[1,320],[16,320]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[2,200], [17, 800]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[8,100], [11, 900]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[7,680],[10,680]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[8,200], [11, 800]])
+    time.sleep(duration)
+
+def Crabwalk(rotation_amount, duration = 0.2):
+    i = 0
+    while i<3:
+        board.bus_servo_set_position(duration, [[2, 100], [8, 100], [14,900]]) 
+        time.sleep(duration)
+        board.bus_servo_set_position(duration, [[3,100 + rotation_amount], [9,100 + rotation_amount], [15, 900 + rotation_amount], [6,100], [12,900], [18, 900]])
+        time.sleep(duration)
+        board.bus_servo_set_position(duration, [[2, 200], [8, 200], [14,800]]) # Putting legs back down
+        time.sleep(duration)
+        board.bus_servo_set_position(duration, [[5, 100], [11,900], [17, 900]])
+        time.sleep(duration)
+        board.bus_servo_set_position(duration, [[6,100 + rotation_amount], [12,900 + rotation_amount], [18, 900 + rotation_amount], [3,100], [9,100], [15, 900]])
+        time.sleep(duration)
+        board.bus_servo_set_position(duration, [[5, 200], [11,800], [17, 800]])
+        time.sleep(duration)
+        i+=1
+        
+def ExitCrabwalk(duration = 0.1):
+    board.bus_servo_set_position(duration, [[2, 100], [8, 100], [14,900]]) 
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[6,100], [12,900], [18, 900]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[2, 200], [8, 200], [14,800]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[8,100], [11, 900]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[7,500],[10,500]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[8,200], [11, 800]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[2,100], [17, 900]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[1,500],[16,500]])
+    time.sleep(duration)
+    board.bus_servo_set_position(duration, [[2,200], [17, 800]])
+    time.sleep(duration)
+
+def adjustment(duration, prev_left_distance, prev_right_distance, left_distance, right_distance, THRESHOLD1 = 20, THRESHOLD2 = 20): #Negative distance corresponds to movement to the left
+    if prev_left_distance - left_distance > THRESHOLD1: # If the robot has drifted too far to the left
+        rot_amount = int( (prev_left_distance - left_distance) / 5)
+        turn_right(duration, duration, rot_amount ,100)
+    elif prev_right_distance - right_distance > THRESHOLD1: # If the robot has drifted too far to the right
+        rot_amount = int((prev_right_distance - right_distance) / 5)
+        turn_left(duration, duration, rot_amount ,100)
+
+    #Crabwalk
+    if left_distance- right_distance > THRESHOLD2: # If robot is too far to the right 
+        crabwalk_rotation_amount = int((left_distance - right_distance)/4)
+        EnterCrabwalk()
+        Crabwalk(crabwalk_rotation_amount)
+        ExitCrabwalk()
+    elif left_distance - right_distance < -THRESHOLD2: # If the robot is too far to the left
+        crabwalk_rotation_amount = int(-(right_distance - left_distance)/4)
+        EnterCrabwalk()
+        Crabwalk(crabwalk_rotation_amount)
+        ExitCrabwalk()
 
 # test the accuracy of moving one tile, important for adjusting the compounding
 # errors
-def move_one_tile(reps=1):
-    repetitions = reps * 4
-    if repetitions > 4:
-        for j in range(repetitions):
-            rotation = 105 - 2 * (j - 1)
-            tripod(rot=rotation)
-            distance = s.getDistance()
-            if distance < DISTANCE_PLAN:
-                break
-    else:
-        for j in range(repetitions):
-            tripod()
-            distance = s.getDistance()
-            if distance < DISTANCE_PLAN:
-                break
+def move_one_tile():
+    #read distance as the previous left and right distance first
+    prev_left, prev_right = LookAround()
+    #move for one tile
+    for i in range(4):
+        tripod()
+        distance = s.getDistance()
+        if distance < DISTANCE_PLAN:
+            break
+    time.sleep(0.5)
+    #scan the current side distances
+    cur_left, cur_right = LookAround()
+
+    #then make adjustment using the crab walk
+    adjustment(0.2, prev_left, prev_right, cur_left,cur_right)
+    
+    # repetitions = reps * 4
+    # if repetitions > 4:
+    #     for j in range(repetitions):
+    #         rotation = 105 - 2 * (j - 1)
+    #         tripod(rot=rotation)
+    #         distance = s.getDistance()
+    #         if distance < DISTANCE_PLAN:
+    #             break
+    # else:
+    #     for j in range(repetitions):
+    #         tripod()
+    #         distance = s.getDistance()
+    #         if distance < DISTANCE_PLAN:
+    #             break
+    
 
 
 # dead reckoning algorithm, needs to update current position and heading after each
@@ -350,7 +456,8 @@ def move_with_target(start, goal):
         elif diff == 3:
             turn_left_90()
             heading = target_dir
-        move_one_tile(abs(dif_NS))
+        for i in range(abs(dif_NS)):
+            move_one_tile()
         cur_x = goal[0]
         print(f"After NS move: ({cur_x}, {cur_y}), heading={heading}")
 
@@ -368,7 +475,8 @@ def move_with_target(start, goal):
         elif diff == 3:
             turn_left_90()
             heading = target_dir
-        move_one_tile(abs(dif_EW))
+        for i in range(abs(dif_EW)):
+            move_one_tile()
         cur_y = goal[1]
         print(f"After EW move: ({cur_x}, {cur_y}), heading={heading}")
 
