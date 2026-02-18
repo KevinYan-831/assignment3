@@ -315,7 +315,6 @@ def move_one_tile(reps=1):
             distance = s.getDistance()
             if distance < DISTANCE_PLAN:
                 break
-            
     else:
         for j in range(repetitions):
             tripod()
@@ -892,6 +891,8 @@ def frontier_mapping(given_map):
     cur_x = 0
     cur_y = 0
     cur_heading = 1
+    prev_x = None  # Track previous position to skip scanning behind
+    prev_y = None
 
     # Initialize tracking sets
     visited = set()
@@ -902,8 +903,8 @@ def frontier_mapping(given_map):
 
 
     while True:
-        # Scan current cell to detect walls
-        scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map)
+        # Scan current cell to detect walls (skip direction we came from)
+        scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x, prev_y)
 
         # Update frontier set with newly discovered neighbors
         update_frontier(given_map, visited, frontiers, cur_x, cur_y)
@@ -942,6 +943,9 @@ def frontier_mapping(given_map):
 
         goal_state = (next_target[0], next_target[1], goal_heading)
 
+        # Save current position as previous before moving
+        prev_x, prev_y = cur_x, cur_y
+
         # move_with_target returns (steps, final_heading)
         steps, cur_heading = move_with_target(start_state, goal_state)
 
@@ -977,7 +981,8 @@ def fold_default():
 
 
 #scan all four directions and update the give map's obstacle map
-def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map):
+# prev_x, prev_y: if provided, skip scanning the direction we came from (since we know it's free)
+def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, prev_y=None):
     #the logic should be according to the current heading of the robot, scan all four directions and get readings and determine whether there's a wall and update the object map
     DISTANCE_NO_WALL = 5000
     distance_south = DISTANCE_NO_WALL
@@ -985,9 +990,34 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map):
     distance_east = DISTANCE_NO_WALL
     distance_west = DISTANCE_NO_WALL
     #constat for detection error
-    ERROR_RANGE = 50
+    ERROR_RANGE = 20
+
+    # Determine which direction to skip (the one we came from)
+    skip_direction = None
+    if prev_x is not None and prev_y is not None:
+        if prev_x < cur_x:  # Came from North
+            skip_direction = DIRECTION.North
+        elif prev_x > cur_x:  # Came from South
+            skip_direction = DIRECTION.South
+        elif prev_y < cur_y:  # Came from West
+            skip_direction = DIRECTION.West
+        elif prev_y > cur_y:  # Came from East
+            skip_direction = DIRECTION.East
 
     for direction in [DIRECTION.North, DIRECTION.South, DIRECTION.East, DIRECTION.West]:
+        # Skip the direction we came from - we know it's free (no wall)
+        if direction == skip_direction:
+            # Mark as free and continue
+            if direction == DIRECTION.North:
+                distance_north = DISTANCE_NO_WALL
+            elif direction == DIRECTION.South:
+                distance_south = DISTANCE_NO_WALL
+            elif direction == DIRECTION.East:
+                distance_east = DISTANCE_NO_WALL
+            elif direction == DIRECTION.West:
+                distance_west = DISTANCE_NO_WALL
+            print(f"Skipping scan to {direction} (came from there, known free)")
+            continue
         if cur_heading == direction:
             distance = s.getDistance()
             if direction == DIRECTION.North:
