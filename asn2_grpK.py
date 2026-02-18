@@ -353,7 +353,7 @@ def Crabwalk(rotation_amount, duration = 0.2):
         board.bus_servo_set_position(duration, [[5, 200], [11,800], [17, 800]])
         time.sleep(duration)
         i+=1
-        
+
 def ExitCrabwalk(duration = 0.1):
     board.bus_servo_set_position(duration, [[2, 100], [8, 100], [14,900]]) 
     time.sleep(duration)
@@ -405,7 +405,6 @@ def move_one_tile():
         distance = s.getDistance()
         if distance < DISTANCE_PLAN:
             break
-    time.sleep(0.5)
     #scan the current side distances
     cur_left, cur_right = LookAround()
 
@@ -1338,7 +1337,6 @@ if __name__ == "__main__":
     frontier_mapping(map2)
     # fold_middle_leg()
 
-    map2.printCostMap()
     
 
 
