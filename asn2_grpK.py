@@ -129,26 +129,18 @@ def set_all_default():
         [P_ID, P_DEFAULT]
     ])
     time.sleep(1)
-
 #helper function that return boolean to determin whether the robot is blocked. Return True if the robot is blocked
 def is_blocked(distance):
     return distance <= DISTANCE_BLOCK
-
 def platform_left(dur):
     duration = dur
     board.bus_servo_set_position(duration, [[P_ID, P_LEFT]])
-
 def platform_right(dur):
     duration = dur
     board.bus_servo_set_position(duration, [[P_ID, P_RIGHT]])
-
 def platform_default(dur):
     duration = dur
     board.bus_servo_set_position(duration, [[P_ID, P_DEFAULT]])
-
-
-
-
 def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
     duration = dur
     pause = pu
@@ -169,8 +161,7 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [LF_INNER_ID, LF_INNER_DEFAULT - rotation]
     ])  # Initial lift of legs and rotation
     time.sleep(pause)
-    print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
-    print(s.getDistance())
+
 
     board.bus_servo_set_position(duration, [
         [RB_MIDDLE_ID, RB_MIDDLE_DEFAULT],
@@ -178,8 +169,7 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [LM_MIDDLE_ID, LM_MIDDLE_DEFAULT]
     ])  # Putting legs back down
     time.sleep(pause)
-    print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
-    print(s.getDistance())
+
 
     board.bus_servo_set_position(duration, [
         [RM_MIDDLE_ID, RM_MIDDLE_DEFAULT - lift],
@@ -193,8 +183,7 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [LM_INNER_ID, LM_INNER_DEFAULT - rotation]
     ])  # Lifting second set of legs and rotation
     time.sleep(pause)
-    print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
-    print(s.getDistance())
+
 
     board.bus_servo_set_position(duration, [
         [RM_MIDDLE_ID, RM_MIDDLE_DEFAULT],
@@ -202,16 +191,11 @@ def tripod(dur=0.3, pu=0.3, lif=100, rot=105):
         [LF_MIDDLE_ID, LF_MIDDLE_DEFAULT]
     ])  # Putting down
     time.sleep(pause)
-    print(f"\n[t = {time.perf_counter() - t0:.1f} s]")
-    print(s.getDistance())
-
-
 def turn_left(dur, pu, rot, lif):
     duration = dur
     pause = pu
     rotation = rot
     lift = lif
-
     board.bus_servo_set_position(duration, [
         [2, RB_MIDDLE_DEFAULT - lift],
         [8, RF_MIDDLE_DEFAULT - lift],
@@ -221,14 +205,12 @@ def turn_left(dur, pu, rot, lif):
         [13, LM_INNER_DEFAULT + rotation]
     ])
     time.sleep(pause)
-
     board.bus_servo_set_position(duration, [
         [2, RB_MIDDLE_DEFAULT],
         [8, RF_MIDDLE_DEFAULT],
         [14, LM_MIDDLE_DEFAULT]
     ])
     time.sleep(pause)
-
     board.bus_servo_set_position(duration, [
         [5, RM_MIDDLE_DEFAULT - lift],
         [11, LB_MIDDLE_DEFAULT + lift],
@@ -238,14 +220,11 @@ def turn_left(dur, pu, rot, lif):
         [13, LM_INNER_DEFAULT]
     ])
     time.sleep(pause)
-
     board.bus_servo_set_position(duration, [
         [5, RM_MIDDLE_DEFAULT],
         [11, LB_MIDDLE_DEFAULT],
         [17, LF_MIDDLE_DEFAULT]
     ])
-
-
 def turn_right(dur, pu, rot, lif):
     duration = dur
     pause = pu
@@ -284,25 +263,18 @@ def turn_right(dur, pu, rot, lif):
         [8, RF_MIDDLE_DEFAULT],
         [14, LM_MIDDLE_DEFAULT]
     ])
-
-
 def turn_left_90():
     for i in range(4):
         turn_left(0.3, 0.3, 197, 100)
         time.sleep(0.3)
-
-
 def turn_right_90():
     for i in range(4):
         turn_right(0.3, 0.3, 197, 100)
         time.sleep(0.3)
-
-
 def turn_around_180():
     for i in range(8):
         turn_left(0.3, 0.3, 197, 100)
         time.sleep(0.3)
-
 #CrabWalk controller used to mitigate the lateral drifting of the robot caused by the compounding errors of the walking gait
 def LookAround():
     #fold legs
@@ -312,7 +284,7 @@ def LookAround():
     time.sleep(1)
     right_distance = s.getDistance()
     #detect left distance
-    platform_right(1) # Turns sonar sensor left
+    platform_left(1) # Turns sonar sensor left
     time.sleep(1.3)
     left_distance = s.getDistance()
     #return default 
@@ -321,8 +293,9 @@ def LookAround():
     fold_default()
     time.sleep(0.5)
     #return the distance from two sides
+    print(f"LOOK AROUND Left Distance: {left_distance}")
+    print(f"LOOK AROUND Right Distance: {right_distance}")
     return left_distance, right_distance
-
 def EnterCrabwalk(duration = 0.1):
     board.bus_servo_set_position(duration, [[2,100], [17, 900]])
     time.sleep(duration)
@@ -336,7 +309,6 @@ def EnterCrabwalk(duration = 0.1):
     time.sleep(duration)
     board.bus_servo_set_position(duration, [[8,200], [11, 800]])
     time.sleep(duration)
-
 def Crabwalk(rotation_amount, duration = 0.2):
     i = 0
     while i<3:
@@ -353,7 +325,6 @@ def Crabwalk(rotation_amount, duration = 0.2):
         board.bus_servo_set_position(duration, [[5, 200], [11,800], [17, 800]])
         time.sleep(duration)
         i+=1
-
 def ExitCrabwalk(duration = 0.1):
     board.bus_servo_set_position(duration, [[2, 100], [8, 100], [14,900]]) 
     time.sleep(duration)
@@ -373,23 +344,30 @@ def ExitCrabwalk(duration = 0.1):
     time.sleep(duration)
     board.bus_servo_set_position(duration, [[2,200], [17, 800]])
     time.sleep(duration)
-
 def adjustment(duration, prev_left_distance, prev_right_distance, left_distance, right_distance, THRESHOLD1 = 20, THRESHOLD2 = 20): #Negative distance corresponds to movement to the left
+    tilelength = 608
+    if right_distance > 300:
+        while right_distance - tilelength > 0:
+            right_distance -= tilelength
+    if left_distance > 300:
+        while left_distance - tilelength >0:
+            left_distance -= tilelength
+    # this adjust robot's heading
     if prev_left_distance - left_distance > THRESHOLD1: # If the robot has drifted too far to the left
-        rot_amount = int( (prev_left_distance - left_distance) / 5)
-        turn_right(duration, duration, rot_amount ,100)
+        rot_amount = int( (prev_left_distance - left_distance) / 4)
+        turn_right(0.3, 0.3, rot_amount, 100)
     elif prev_right_distance - right_distance > THRESHOLD1: # If the robot has drifted too far to the right
-        rot_amount = int((prev_right_distance - right_distance) / 5)
-        turn_left(duration, duration, rot_amount ,100)
+        rot_amount = int((prev_right_distance - right_distance) / 4)
+        turn_left(0.3, 0.3, rot_amount, 100)
 
-    #Crabwalk
+    #Crabwalk, adjusting robot's position relative to the path's center
     if left_distance- right_distance > THRESHOLD2: # If robot is too far to the right 
-        crabwalk_rotation_amount = int((left_distance - right_distance)/4)
+        crabwalk_rotation_amount = int((left_distance - right_distance) / 4)
         EnterCrabwalk()
         Crabwalk(crabwalk_rotation_amount)
         ExitCrabwalk()
     elif left_distance - right_distance < -THRESHOLD2: # If the robot is too far to the left
-        crabwalk_rotation_amount = int(-(right_distance - left_distance)/4)
+        crabwalk_rotation_amount = int(-(right_distance - left_distance) / 4)
         EnterCrabwalk()
         Crabwalk(crabwalk_rotation_amount)
         ExitCrabwalk()
@@ -409,7 +387,7 @@ def move_one_tile():
     cur_left, cur_right = LookAround()
 
     #then make adjustment using the crab walk
-    adjustment(0.2, prev_left, prev_right, cur_left,cur_right)
+    adjustment(0.5, prev_left, prev_right, cur_left,cur_right)
     
     # repetitions = reps * 4
     # if repetitions > 4:
@@ -426,8 +404,6 @@ def move_one_tile():
     #         if distance < DISTANCE_PLAN:
     #             break
     
-
-
 # dead reckoning algorithm, needs to update current position and heading after each
 # movement, print current position and heading, maitain in a form of tuple
 # (x,y,heading)
@@ -438,8 +414,7 @@ def move_with_target(start, goal):
     cur_y = start[1]
     dif_NS = goal[0] - cur_x
     dif_EW = goal[1] - cur_y
-
-    print(f"Starting at ({cur_x}, {cur_y}), heading={heading}")
+    print(f"Starting at ({cur_x}, {cur_y}), current heading={heading}")
 
     # North-South movement
     # dif_NS > 0 means travel south, dif_NS < 0 means travel north
@@ -458,7 +433,7 @@ def move_with_target(start, goal):
         for i in range(abs(dif_NS)):
             move_one_tile()
         cur_x = goal[0]
-        print(f"After NS move: ({cur_x}, {cur_y}), heading={heading}")
+        print(f"NS move to: ({cur_x}, {cur_y}), current heading={heading}")
 
     # East-West movement
     # dif_EW > 0 means travel east, dif_EW < 0 means travel west
@@ -477,7 +452,7 @@ def move_with_target(start, goal):
         for i in range(abs(dif_EW)):
             move_one_tile()
         cur_y = goal[1]
-        print(f"After EW move: ({cur_x}, {cur_y}), heading={heading}")
+        print(f"EW move to: ({cur_x}, {cur_y}), current heading={heading}")
 
     # Align goal heading
     if heading != goal[2]:
@@ -489,10 +464,8 @@ def move_with_target(start, goal):
         elif diff == 3:
             turn_left_90()
 
-    print(f"Final position: ({cur_x}, {cur_y}), heading={goal[2]}")
+    print(f"Final position: ({cur_x}, {cur_y}), final heading={goal[2]}")
     return abs(dif_NS) + abs(dif_EW), heading
-
-
 # Ask user for start and goal position and then execute the movement, assume no
 # obstacle in the path.
 def move_to_target_with_input():
@@ -505,8 +478,6 @@ def move_to_target_with_input():
     start = (start_x, start_y, start_heading)
     goal = (goal_x, goal_y, goal_heading)
     move_with_target(start, goal)
-
-
 # Return the cost map after wavefront propagation
 def wavefront_propagation(given_map, goal_x, goal_y):
     # Clear the cost map first
@@ -576,8 +547,6 @@ def wavefront_propagation(given_map, goal_x, goal_y):
                 given_map.setCost(i, j, 10000)
 
     return given_map.costMap
-
-
 # Traverse the cost map from the current position, and find the optimal direction
 # to travel for the next step, which by finding the lowest non obstacle cost cell
 # near the position.
@@ -612,7 +581,6 @@ def next_step(given_map, cur_x, cur_y):
                 best_direction = direction
 
     return best_direction
-
 #print the path
 # execute and return the path, ask user to input start and goal position
 def print_path_generating(given_map):
@@ -750,8 +718,6 @@ def print_path_generating(given_map):
             cur_x += 1
             cur_heading = DIRECTION.South
     return path
-
-
 # execute and return the path, ask user to input start and goal position
 def path_generating(given_map):
     max_row = given_map.costmap_size_row - 1
@@ -931,8 +897,6 @@ def path_generating(given_map):
         turn_right_90()
     elif goal_heading == DIRECTION.West and cur_heading == DIRECTION.South:
         turn_left_90()
-
-
 # find the optimal path given the map and return the number of steps to the goal
 def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
     max_row = given_map.costmap_size_row - 1
@@ -984,20 +948,17 @@ def bfs_shortest_path(given_map, start_x, start_y, goal_x, goal_y):
 
     # No path found - return a large value to indicate unreachable
     return float('inf')
-
-
 def manhatten_distance(start_x, start_y, goal_x, goal_y):
     return abs(start_x - goal_x) + abs(start_y - goal_y)
 
 #using frontier based approach to naviagte every non-visited neighbor cell, assume the robot always start at (0,0,1)
 #every step moving, the robot stop to let the sensor detect wall existence in each direction
 #should return the constructed map
-
 def frontier_mapping(given_map):
     # Initialize robot state
-    cur_x = 0
-    cur_y = 0
-    cur_heading = 1
+    cur_x = int(input("input the current x coordinate relative to the current map: "))
+    cur_y = int(input("input the current y coordinate relative to the current map: "))
+    cur_heading = int(input("input the current heading direction (1 is north, 3 is south, 2 is east, and 4 is west): "))
     prev_x = None  # Track previous position to skip scanning behind
     prev_y = None
 
@@ -1012,24 +973,19 @@ def frontier_mapping(given_map):
     while True:
         # Scan current cell to detect walls (skip direction we came from)
         scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x, prev_y)
-
         # Update frontier set with newly discovered neighbors
         update_frontier(given_map, visited, frontiers, cur_x, cur_y)
-
-        print(f"Visited: {len(visited)} cells, Frontiers: {frontiers}")
-
+        print(f"Visited: {len(visited)} cells, Frontiers wait to visit: {frontiers}")
         # Check completion condition
         if not frontiers and len(visited) > 1:
             print("\n=== Exploration complete! All reachable cells visited. ===")
             break
-
         # Select nearest frontier
         next_target = select_next_frontier(cur_x, cur_y, frontiers, given_map)
         if next_target is None:
             print("\n=== No more reachable frontiers. Exploration complete. ===")
             break
-
-        print(f"Next target: {next_target}")
+        print(f"Next coordinate to visit: {next_target}")
 
         # Navigate to target
         start_state = (cur_x, cur_y, cur_heading)
@@ -1095,7 +1051,7 @@ def scan_back():
     fold_default()
     time.sleep(0.5)
     turn_left_90()
-    platform_left(0.5)
+    platform_default(0.5)
     return back_distance
 
     
@@ -1111,6 +1067,15 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
     distance_west = DISTANCE_NO_WALL
     #constat for detection error
     ERROR_RANGE = 20
+
+    left_distance, right_distance = LookAround()
+    tilelength = 608
+    if right_distance > 300:
+        while right_distance - tilelength > 0:
+            right_distance -= tilelength
+    if left_distance > 300:
+        while left_distance - tilelength >0:
+            left_distance -= tilelength
 
     # Determine which direction to skip (the one we came from)
     skip_direction = None
@@ -1168,76 +1133,92 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
                 print(f"the distance to the {DIRECTION.West} is {distance_west}")
 
         elif cur_heading == 1 and direction == 2:
-            fold_middle_leg()
-            platform_right(0.5)
-            time.sleep(1)
-            distance_east = s.getDistance()
+            # fold_middle_leg()
+            # platform_right(0.5)
+            # time.sleep(1)
+            # distance_east = s.getDistance()
+            # print(f"the distance to the {DIRECTION.East} is {distance_east}")
+            # platform_default(0.5)
+            # fold_default()
+            distance_east = right_distance
             print(f"the distance to the {DIRECTION.East} is {distance_east}")
-            platform_default(0.5)
-            fold_default()
 
         elif cur_heading == 1 and direction == 4:
-            fold_middle_leg()
-            platform_left(0.5)
-            time.sleep(1)
-            distance_west = s.getDistance()
+            # fold_middle_leg()
+            # platform_left(0.5)
+            # time.sleep(1)
+            # distance_west = s.getDistance()
+            # print(f"the distance to the {DIRECTION.West} is {distance_west}")
+            # platform_default(0.5)
+            # fold_default()
+            distance_west = left_distance
             print(f"the distance to the {DIRECTION.West} is {distance_west}")
-            platform_default(0.5)
-            fold_default()
 
         elif cur_heading == 2 and direction == 1:
-            fold_middle_leg()
-            platform_left(0.5)
-            time.sleep(1)
-            distance_north = s.getDistance()
+            # fold_middle_leg()
+            # platform_left(0.5)
+            # time.sleep(1)
+            # distance_north = s.getDistance()
+            # print(f"the distance to the {DIRECTION.North} is {distance_north}")
+            # platform_default(0.5)
+            # fold_default()
+            distance_north = left_distance
             print(f"the distance to the {DIRECTION.North} is {distance_north}")
-            platform_default(0.5)
-            fold_default()
 
         elif cur_heading == 2 and direction == 3:
-            fold_middle_leg()
-            platform_right(0.5)
-            time.sleep(1)
-            distance_south = s.getDistance()
+            # fold_middle_leg()
+            # platform_right(0.5)
+            # time.sleep(1)
+            # distance_south = s.getDistance()
+            # print(f"the distance to the {DIRECTION.South} is {distance_south}")
+            # platform_default(0.5)
+            # fold_default()
+            distance_south = right_distance
             print(f"the distance to the {DIRECTION.South} is {distance_south}")
-            platform_default(0.5)
-            fold_default()
 
         elif cur_heading == 3 and direction == 2:
-            fold_middle_leg()
-            platform_left(0.5)
-            time.sleep(1)
-            distance_east = s.getDistance()
+            # fold_middle_leg()
+            # platform_left(0.5)
+            # time.sleep(1)
+            # distance_east = s.getDistance()
+            # print(f"the distance to the {DIRECTION.East} is {distance_east}")
+            # platform_default(0.5)
+            # fold_default()
+            distance_east = left_distance
             print(f"the distance to the {DIRECTION.East} is {distance_east}")
-            platform_default(0.5)
-            fold_default()
 
         elif cur_heading == 3 and direction == 4:
-            fold_middle_leg()
-            platform_right(0.5)
-            time.sleep(1)
-            distance_west = s.getDistance()
+            # fold_middle_leg()
+            # platform_right(0.5)
+            # time.sleep(1)
+            # distance_west = s.getDistance()
+            # print(f"the distance to the {DIRECTION.West} is {distance_west}")
+            # platform_default(0.5)
+            # fold_default()
+            distance_west = right_distance
             print(f"the distance to the {DIRECTION.West} is {distance_west}")
-            platform_default(0.5)
-            fold_default()
 
         elif cur_heading == 4 and direction == 3:
-            fold_middle_leg()
-            platform_left(0.5)
-            time.sleep(1)
-            distance_south = s.getDistance()
+            # fold_middle_leg()
+            # platform_left(0.5)
+            # time.sleep(1)
+            # distance_south = s.getDistance()
+            # print(f"the distance to the {DIRECTION.South} is {distance_south}")
+            # platform_default(0.5)
+            # fold_default()
+            distance_south = left_distance
             print(f"the distance to the {DIRECTION.South} is {distance_south}")
-            platform_default(0.5)
-            fold_default()
 
         elif cur_heading == 4 and direction == 1:
-            fold_middle_leg()
-            platform_right(0.5)
-            time.sleep(1)
-            distance_north = s.getDistance()
+            # fold_middle_leg()
+            # platform_right(0.5)
+            # time.sleep(1)
+            # distance_north = s.getDistance()
+            # print(f"the distance to the {DIRECTION.North} is {distance_north}")
+            # platform_default(0.5)
+            # fold_default()
+            distance_north = right_distance
             print(f"the distance to the {DIRECTION.North} is {distance_north}")
-            platform_default(0.5)
-            fold_default()
 
 
     # Update the map with detected obstacles
@@ -1346,6 +1327,9 @@ if __name__ == "__main__":
     # Run frontier-based exploration on the empty map
     frontier_mapping(map2)
     # fold_middle_leg()
+
+
+
 
     
 
