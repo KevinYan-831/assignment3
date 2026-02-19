@@ -1,4 +1,4 @@
-import map as mp
+import map_blank as mp
 import sys
 import time
 import signal
@@ -1323,8 +1323,9 @@ if __name__ == "__main__":
     # move_one_tile(2)
 
 
-    map2 = mp.CSME301Map(8,8)
-
+    map2 = mp.CSME301Map()
+    print("The initial obstacle map")
+    map2.printObstacleMap()
     # Run frontier-based exploration on the empty map
     frontier_mapping(map2)
     # fold_middle_leg()
