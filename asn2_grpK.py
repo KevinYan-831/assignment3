@@ -36,6 +36,7 @@ def Stop(signum, frame):
 
 
 signal.signal(signal.SIGINT, Stop)
+s = sonar.Sonar()
 
 # Right Front Leg
 RF_INNER_ID = 7
@@ -275,27 +276,34 @@ def turn_around_180():
     for i in range(8):
         turn_left(0.3, 0.3, 197, 100)
         time.sleep(0.3)
+
+
 #CrabWalk controller used to mitigate the lateral drifting of the robot caused by the compounding errors of the walking gait
 def LookAround():
+    
+    front_distance = s.getDistance()
     #fold legs
     fold_middle_leg()
     #detect right distance
     platform_right(0.5) # Turns sonar sensor right 
     time.sleep(1)
-    right_distance = s.getDistance()
+    cur_right_distance = s.getDistance()
     #detect left distance
     platform_left(1) # Turns sonar sensor left
     time.sleep(1.3)
-    left_distance = s.getDistance()
+    cur_left_distance = s.getDistance()
     #return default 
     platform_default(0.5)
     #fold legs back
     fold_default()
     time.sleep(0.5)
     #return the distance from two sides
-    print(f"LOOK AROUND Left Distance: {left_distance}")
-    print(f"LOOK AROUND Right Distance: {right_distance}")
-    return left_distance, right_distance
+    print(f"LOOK AROUND Left Distance: {cur_left_distance}")
+    print(f"LOOK AROUND Right Distance: {cur_right_distance}")
+    return front_distance,cur_left_distance, cur_right_distance
+
+
+
 def EnterCrabwalk(duration = 0.1):
     board.bus_servo_set_position(duration, [[2,100], [17, 900]])
     time.sleep(duration)
@@ -354,14 +362,14 @@ def adjustment(duration, prev_left_distance, prev_right_distance, left_distance,
             left_distance -= tilelength
     # this adjust robot's heading
     if prev_left_distance - left_distance > THRESHOLD1: # If the robot has drifted too far to the left
-        rot_amount = int( (prev_left_distance - left_distance) / 4)
-        turn_right(0.3, 0.3, rot_amount, 100)
+        rot_amount = int( (prev_left_distance - left_distance) / 3)
+        turn_right(duration, 0.5, rot_amount, 100)
     elif prev_right_distance - right_distance > THRESHOLD1: # If the robot has drifted too far to the right
-        rot_amount = int((prev_right_distance - right_distance) / 4)
-        turn_left(0.3, 0.3, rot_amount, 100)
+        rot_amount = int((prev_right_distance - right_distance) / 3)
+        turn_left(duration, 0.5, rot_amount, 100)
 
     #Crabwalk, adjusting robot's position relative to the path's center
-    if left_distance- right_distance > THRESHOLD2: # If robot is too far to the right 
+    if left_distance - right_distance > THRESHOLD2: # If robot is too far to the right 
         crabwalk_rotation_amount = int((left_distance - right_distance) / 4)
         EnterCrabwalk()
         Crabwalk(crabwalk_rotation_amount)
@@ -376,7 +384,8 @@ def adjustment(duration, prev_left_distance, prev_right_distance, left_distance,
 # errors
 def move_one_tile():
     #read distance as the previous left and right distance first
-    prev_left, prev_right = LookAround()
+    front, prev_left, prev_right = LookAround()
+    print(f"Moving One Tile, previous left: {prev_left}, previous right: {prev_right}")
     #move for one tile
     for i in range(4):
         tripod()
@@ -384,10 +393,11 @@ def move_one_tile():
         if distance < DISTANCE_PLAN:
             break
     #scan the current side distances
-    cur_left, cur_right = LookAround()
+    front, cur_left, cur_right = LookAround()
+    print(f"Moving One Tile, current left: {prev_left}, current right: {prev_right}")
 
     #then make adjustment using the crab walk
-    adjustment(0.5, prev_left, prev_right, cur_left,cur_right)
+    adjustment(0.7, prev_left, prev_right, cur_left,cur_right)
     
     # repetitions = reps * 4
     # if repetitions > 4:
@@ -1068,14 +1078,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
     #constat for detection error
     ERROR_RANGE = 20
 
-    left_distance, right_distance = LookAround()
-    tilelength = 608
-    if right_distance > 300:
-        while right_distance - tilelength > 0:
-            right_distance -= tilelength
-    if left_distance > 300:
-        while left_distance - tilelength >0:
-            left_distance -= tilelength
+    front_distance, cur_left_distance, cur_right_distance = LookAround()
 
     # Determine which direction to skip (the one we came from)
     skip_direction = None
@@ -1104,7 +1107,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             print(f"Skipping scan to {direction} (came from there, known free)")
             continue
         if cur_heading == direction:
-            distance = s.getDistance()
+            distance = front_distance
             if direction == DIRECTION.North:
                 distance_north = distance
                 print(f"the distance to the {DIRECTION.North} is {distance_north}")
@@ -1140,7 +1143,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             # print(f"the distance to the {DIRECTION.East} is {distance_east}")
             # platform_default(0.5)
             # fold_default()
-            distance_east = right_distance
+            distance_east = cur_right_distance
             print(f"the distance to the {DIRECTION.East} is {distance_east}")
 
         elif cur_heading == 1 and direction == 4:
@@ -1151,7 +1154,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             # print(f"the distance to the {DIRECTION.West} is {distance_west}")
             # platform_default(0.5)
             # fold_default()
-            distance_west = left_distance
+            distance_west = cur_left_distance
             print(f"the distance to the {DIRECTION.West} is {distance_west}")
 
         elif cur_heading == 2 and direction == 1:
@@ -1162,7 +1165,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             # print(f"the distance to the {DIRECTION.North} is {distance_north}")
             # platform_default(0.5)
             # fold_default()
-            distance_north = left_distance
+            distance_north = cur_left_distance
             print(f"the distance to the {DIRECTION.North} is {distance_north}")
 
         elif cur_heading == 2 and direction == 3:
@@ -1173,7 +1176,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             # print(f"the distance to the {DIRECTION.South} is {distance_south}")
             # platform_default(0.5)
             # fold_default()
-            distance_south = right_distance
+            distance_south = cur_right_distance
             print(f"the distance to the {DIRECTION.South} is {distance_south}")
 
         elif cur_heading == 3 and direction == 2:
@@ -1184,7 +1187,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             # print(f"the distance to the {DIRECTION.East} is {distance_east}")
             # platform_default(0.5)
             # fold_default()
-            distance_east = left_distance
+            distance_east = cur_left_distance
             print(f"the distance to the {DIRECTION.East} is {distance_east}")
 
         elif cur_heading == 3 and direction == 4:
@@ -1195,7 +1198,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             # print(f"the distance to the {DIRECTION.West} is {distance_west}")
             # platform_default(0.5)
             # fold_default()
-            distance_west = right_distance
+            distance_west = cur_right_distance
             print(f"the distance to the {DIRECTION.West} is {distance_west}")
 
         elif cur_heading == 4 and direction == 3:
@@ -1206,7 +1209,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             # print(f"the distance to the {DIRECTION.South} is {distance_south}")
             # platform_default(0.5)
             # fold_default()
-            distance_south = left_distance
+            distance_south = cur_left_distance
             print(f"the distance to the {DIRECTION.South} is {distance_south}")
 
         elif cur_heading == 4 and direction == 1:
@@ -1217,7 +1220,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             # print(f"the distance to the {DIRECTION.North} is {distance_north}")
             # platform_default(0.5)
             # fold_default()
-            distance_north = right_distance
+            distance_north = cur_right_distance
             print(f"the distance to the {DIRECTION.North} is {distance_north}")
 
 
@@ -1304,7 +1307,7 @@ def computer_path_distance(cur_x, cur_y, frontier_x, frontier_y, give_map):
 
 if __name__ == "__main__":
     set_all_default()
-    s = sonar.Sonar()
+    
     start_time = time.time()
 
     # Create the map object
