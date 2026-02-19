@@ -1086,6 +1086,19 @@ def fold_default():
     ])
     time.sleep(0.5)
 
+def scan_back():
+    turn_right_90()
+    fold_middle_leg()
+    platform_right(0.5)
+    time.sleep(1)
+    back_distance = s.getDistance()
+    fold_default()
+    time.sleep(0.5)
+    turn_left_90()
+    platform_left(0.5)
+    return back_distance
+
+    
 
 #scan all four directions and update the give map's obstacle map
 # prev_x, prev_y: if provided, skip scanning the direction we came from (since we know it's free)
@@ -1140,9 +1153,7 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
                 distance_west = distance
                 print(f"the distance to the {DIRECTION.West} is {distance_west}")
         elif abs(cur_heading - direction) == 2:
-            turn_around_180()
-            time.sleep(0.5)
-            distance = s.getDistance()
+            distance = scan_back()
             if direction == DIRECTION.North:
                 distance_north = distance
                 print(f"the distance to the {DIRECTION.North} is {distance_north}")
@@ -1155,7 +1166,6 @@ def scan_and_detect_walls(cur_x, cur_y, cur_heading, given_map, prev_x=None, pre
             else:
                 distance_west = distance
                 print(f"the distance to the {DIRECTION.West} is {distance_west}")
-            turn_around_180()
 
         elif cur_heading == 1 and direction == 2:
             fold_middle_leg()
