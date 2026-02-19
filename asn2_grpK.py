@@ -352,7 +352,7 @@ def ExitCrabwalk(duration = 0.1):
     time.sleep(duration)
     board.bus_servo_set_position(duration, [[2,200], [17, 800]])
     time.sleep(duration)
-def adjustment(duration, prev_left_distance, prev_right_distance, left_distance, right_distance, THRESHOLD1 = 20, THRESHOLD2 = 20): #Negative distance corresponds to movement to the left
+def adjustment(duration, left_distance, right_distance, THRESHOLD1 = 20, THRESHOLD2 = 20): #Negative distance corresponds to movement to the left
     tilelength = 608
     if right_distance > 300:
         while right_distance - tilelength > 0:
@@ -361,11 +361,11 @@ def adjustment(duration, prev_left_distance, prev_right_distance, left_distance,
         while left_distance - tilelength >0:
             left_distance -= tilelength
     # this adjust robot's heading
-    if prev_left_distance - left_distance > THRESHOLD1: # If the robot has drifted too far to the left
-        rot_amount = int( (prev_left_distance - left_distance) / 3)
+    if left_distance - right_distance > THRESHOLD1: # rotate left
+        rot_amount = int( (left_distance - right_distance) / 3)
         turn_right(duration, 0.5, rot_amount, 100)
-    elif prev_right_distance - right_distance > THRESHOLD1: # If the robot has drifted too far to the right
-        rot_amount = int((prev_right_distance - right_distance) / 3)
+    elif left_distance - right_distance <  -THRESHOLD1: # rotate right
+        rot_amount = int((left_distance - right_distance) / 3)
         turn_left(duration, 0.5, rot_amount, 100)
 
     #Crabwalk, adjusting robot's position relative to the path's center
@@ -383,9 +383,7 @@ def adjustment(duration, prev_left_distance, prev_right_distance, left_distance,
 # test the accuracy of moving one tile, important for adjusting the compounding
 # errors
 def move_one_tile():
-    #read distance as the previous left and right distance first
-    front, prev_left, prev_right = LookAround()
-    print(f"Moving One Tile, previous left: {prev_left}, previous right: {prev_right}")
+    
     #move for one tile
     for i in range(4):
         tripod()
@@ -394,10 +392,10 @@ def move_one_tile():
             break
     #scan the current side distances
     front, cur_left, cur_right = LookAround()
-    print(f"Moving One Tile, current left: {prev_left}, current right: {prev_right}")
+    print(f"Moving One Tile, current left: {cur_left}, current right: {cur_right}")
 
     #then make adjustment using the crab walk
-    adjustment(0.7, prev_left, prev_right, cur_left,cur_right)
+    adjustment(0.7, cur_left,cur_right)
     
     # repetitions = reps * 4
     # if repetitions > 4:
