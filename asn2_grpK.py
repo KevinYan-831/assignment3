@@ -727,19 +727,25 @@ def print_path_generating(given_map):
             cur_heading = DIRECTION.South
     return path
 # execute and return the path, ask user to input start and goal position
-def path_generating(given_map):
+def path_generating(given_map, start, goal):
     max_row = given_map.costmap_size_row - 1
     max_col = given_map.costmap_size_col - 1
     print(f"Map dimensions: x (row) in [0, {max_row}], y (col) in [0, {max_col}]")
 
     # create variables to store current state and keep updating until the robot
     # walk to the destination
-    start_x = int(input("Enter the starting x coordinate: "))
-    start_y = int(input("Enter the starting y coordinate: "))
-    start_heading = int(input("Enter the start heading: "))
-    goal_x = int(input("Enter the goal x coordinate: "))
-    goal_y = int(input("Enter the goal y coordinate: "))
-    goal_heading = int(input("Enter the goal heading: "))
+    # start_x = int(input("Enter the starting x coordinate: "))
+    # start_y = int(input("Enter the starting y coordinate: "))
+    # start_heading = int(input("Enter the start heading: "))
+    # goal_x = int(input("Enter the goal x coordinate: "))
+    # goal_y = int(input("Enter the goal y coordinate: "))
+    # goal_heading = int(input("Enter the goal heading: "))
+    start_x = start[0]
+    start_y = start[1]
+    start_heading = start[2]
+    goal_x = goal[0]
+    goal_y = goal[1]
+    goal_heading = goal[2]
 
     # Validate coordinates
     if not (0 <= start_x <= max_row and 0 <= start_y <= max_col):
@@ -1017,8 +1023,8 @@ def frontier_mapping(given_map):
         # Save current position as previous before moving
         prev_x, prev_y = cur_x, cur_y
 
-        # move_with_target returns (steps, final_heading)
-        steps, cur_heading = move_with_target(start_state, goal_state)
+        # use wavefront propagation to move to the target frontier
+        path_generating(start_state, goal_state)
 
         # Update position after movement
         cur_x, cur_y = next_target
